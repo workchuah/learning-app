@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Learning App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1 class="logo">AI Learning App</h1>
+                <p>Please login to continue</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="userid">User ID</label>
+                    <input 
+                        type="text" 
+                        id="userid" 
+                        name="userid" 
+                        required 
+                        placeholder="Enter your user ID"
+                        autocomplete="username"
+                    />
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                        />
+                        <button type="button" class="btn-toggle-password" id="toggle-password">
+                            <span class="eye-icon">👁️</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="login-error" class="error-message" style="display: none;"></div>
+                
+                <button type="submit" class="btn btn-primary btn-large" id="login-btn">
+                    Login
+                </button>
+            </form>
+            
+            <div class="login-footer">
+                <p>AI-Powered Learning Platform</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="login.js"></script>
+</body>
+</html>

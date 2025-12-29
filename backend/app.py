@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from openai import OpenAI
 import google.generativeai as genai  # type: ignore
 from dotenv import load_dotenv
+from functools import wraps
 from pymongo import MongoClient  # type: ignore
 from pymongo.errors import ConnectionFailure  # type: ignore
 
@@ -61,6 +62,20 @@ CORS(app,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
      allow_headers=custom_headers,
      expose_headers=['Content-Type'])
+
+# Authentication Configuration
+VALID_USERID = 'chuahlearn'
+VALID_PASSWORD = 'chuahchuah'
+
+def login_required(f):
+    """Decorator to require login for API endpoints"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if user is logged in
+        if not session.get('logged_in'):
+            return jsonify({'error': 'Authentication required', 'authenticated': False}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -642,6 +657,7 @@ def create_course():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/courses/<course_id>/generate-structure', methods=['POST'])
+@login_required
 def generate_course_structure(course_id):
     """Generate course structure using Course Structure Designer Agent"""
     try:
@@ -698,6 +714,7 @@ def generate_course_structure(course_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/courses/<course_id>', methods=['GET'])
+@login_required
 def get_course(course_id):
     """Get course details"""
     course = get_from_db('courses', course_id)
@@ -707,12 +724,14 @@ def get_course(course_id):
     return jsonify(course), 200
 
 @app.route('/api/courses', methods=['GET'])
+@login_required
 def get_all_courses():
     """Get all courses"""
     courses = get_all_from_db('courses')
     return jsonify(courses), 200
 
 @app.route('/api/topics/<topic_id>/generate-content', methods=['POST'])
+@login_required
 def generate_topic_content(topic_id):
     """Generate full content for a topic using specialized AI agents"""
     try:
@@ -778,6 +797,7 @@ def generate_topic_content(topic_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/topics/<topic_id>', methods=['GET'])
+@login_required
 def get_topic_content(topic_id):
     """Get topic content"""
     content = get_from_db('topics', topic_id)
@@ -798,6 +818,7 @@ def health_check():
 
 # API Key Management Endpoints
 @app.route('/api/set-api-keys', methods=['POST'])
+@login_required
 def set_api_keys():
     """Set API keys and provider for the current session"""
     try:
@@ -834,6 +855,7 @@ def set_api_keys():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/test-api-key', methods=['POST'])
+@login_required
 def test_api_key():
     """Test if an API key is valid"""
     try:
@@ -899,6 +921,7 @@ def test_api_key():
         return jsonify({'valid': False, 'error': str(e)}), 500
 
 @app.route('/api/clear-api-keys', methods=['POST'])
+@login_required
 def clear_api_keys():
     """Clear API keys from session"""
     try:
@@ -910,6 +933,7 @@ def clear_api_keys():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/api-key-status', methods=['GET'])
+@login_required
 def api_key_status():
     """Check if API keys are configured"""
     provider = session.get('api_provider', 'openai')
@@ -925,6 +949,7 @@ def api_key_status():
 
 # Agent-specific API Key Management Endpoints
 @app.route('/api/set-agent-api-keys', methods=['POST'])
+@login_required
 def set_agent_api_keys():
     """Set API keys for individual agents"""
     try:
@@ -966,6 +991,7 @@ def set_agent_api_keys():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/clear-agent-api-keys', methods=['POST'])
+@login_required
 def clear_agent_api_keys():
     """Clear all agent API keys"""
     try:
@@ -983,6 +1009,7 @@ def clear_agent_api_keys():
 
 # Progress Management Endpoints
 @app.route('/api/progress', methods=['GET'])
+@login_required
 def get_progress():
     """Get all progress data"""
     progress_data = get_all_from_db('progress')
@@ -995,6 +1022,7 @@ def get_progress():
     return jsonify(progress_dict), 200
 
 @app.route('/api/progress', methods=['POST'])
+@login_required
 def update_progress():
     """Update progress for a topic"""
     try:
@@ -1023,8 +1051,13 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fronten
 
 @app.route('/')
 def index():
-    """Serve main index page"""
-    return send_from_directory(FRONTEND_DIR, 'index.html')
+    """Serve login page as default"""
+    return send_from_directory(FRONTEND_DIR, 'login.html')
+
+@app.route('/login.html')
+def login_page():
+    """Serve login page"""
+    return send_from_directory(FRONTEND_DIR, 'login.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):

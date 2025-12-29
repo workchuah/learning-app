@@ -9,6 +9,9 @@ let topic = null;
 let progress = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication first
+    const authenticated = await requireAuth();
+    if (!authenticated) return;
     if (!courseId || moduleIndex === null || topicIndex === null) {
         window.location.href = 'index.html';
         return;

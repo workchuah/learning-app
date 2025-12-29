@@ -6,6 +6,9 @@ let course = null;
 let progress = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication first
+    const authenticated = await requireAuth();
+    if (!authenticated) return;
     if (!courseId) {
         window.location.href = 'index.html';
         return;

@@ -11,7 +11,10 @@ const AGENT_NAMES = {
 };
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication first
+    const authenticated = await requireAuth();
+    if (!authenticated) return;
     loadAllAgentSettings();
     setupEventListeners();
 });

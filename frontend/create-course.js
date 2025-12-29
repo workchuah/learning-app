@@ -1,6 +1,10 @@
-document.addEventListener('DOMContentLoaded', () => {
-    setupFileUpload();
-    document.getElementById('course-form').addEventListener('submit', handleSubmit);
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication first
+    const authenticated = await requireAuth();
+    if (authenticated) {
+        setupFileUpload();
+        document.getElementById('course-form').addEventListener('submit', handleSubmit);
+    }
 });
 
 function setupFileUpload() {

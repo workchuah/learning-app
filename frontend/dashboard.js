@@ -1,6 +1,10 @@
 // Load courses from backend
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadCourses();
+    // Check authentication first
+    const authenticated = await requireAuth();
+    if (authenticated) {
+        await loadCourses();
+    }
 });
 
 async function loadCourses() {

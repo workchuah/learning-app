@@ -1,6 +1,48 @@
 // Common utilities and API configuration
 // Load config.js first, then use API_BASE_URL from window object
-const API_BASE_URL = window.API_BASE_URL || 'https://learning-app-9oo4.onrender.com';
+const API_BASE_URL = window.API_BASE_URL || 'https://learning-app-9oo4.onrender.com/api';
+
+// Authentication check function
+async function checkAuthentication() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/check-auth`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+        const data = await response.json();
+        return data.authenticated === true;
+    } catch (error) {
+        console.error('Auth check error:', error);
+        return false;
+    }
+}
+
+// Redirect to login if not authenticated
+async function requireAuth() {
+    const isAuthenticated = await checkAuthentication();
+    if (!isAuthenticated) {
+        sessionStorage.removeItem('isLoggedIn');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Logout function
+async function logout() {
+    try {
+        await fetch(`${API_BASE_URL}/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+    } finally {
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userid');
+        window.location.href = 'login.html';
+    }
+}
 
 // Get API keys from localStorage
 function getApiHeaders() {
@@ -53,7 +95,8 @@ async function apiFetch(url, options = {}) {
     
     return fetch(`${API_BASE_URL}${url}`, {
         ...options,
-        headers
+        headers,
+        credentials: 'include'  // Important for session cookies
     });
 }
 
