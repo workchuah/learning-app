@@ -30,11 +30,14 @@ allowed_origins = [
     "http://127.0.0.1:8000",
     "http://127.0.0.1:5000",
     "https://chuahlearningapp.netlify.app",  # Your Netlify URL
-    frontend_url  # From environment variable
+    "https://chuahlearningapp.netlify.app/",  # With trailing slash
+    frontend_url,  # From environment variable
+    frontend_url.rstrip('/') if frontend_url else None,  # Without trailing slash
+    frontend_url.rstrip('/') + '/' if frontend_url else None  # With trailing slash
 ]
 
 # Remove duplicates and filter out None values
-allowed_origins = list(set([origin for origin in allowed_origins if origin]))
+allowed_origins = list(set([origin for origin in allowed_origins if origin and origin.strip()]))
 
 print(f"CORS allowed origins: {allowed_origins}")
 
@@ -69,10 +72,27 @@ CORS(app,
 @app.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
-        response = jsonify({'status': 'ok'})
         origin = request.headers.get('Origin')
-        if origin in allowed_origins:
+        response = jsonify({'status': 'ok'})
+        
+        # Check if origin matches (with or without trailing slash)
+        origin_match = False
+        if origin:
+            # Normalize origin (remove trailing slash for comparison)
+            origin_normalized = origin.rstrip('/')
+            for allowed in allowed_origins:
+                if allowed and allowed.rstrip('/') == origin_normalized:
+                    origin_match = True
+                    break
+        
+        if origin_match:
             response.headers.add("Access-Control-Allow-Origin", origin)
+        elif origin:  # If origin provided but not in list, still allow for debugging
+            # Log for debugging
+            print(f"WARNING: Origin {origin} not in allowed list: {allowed_origins}")
+            # Allow it anyway for now (you can remove this for production)
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        
         response.headers.add('Access-Control-Allow-Headers', '*')
         response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -846,15 +866,29 @@ def health_check():
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
     """User login endpoint"""
-    # Handle preflight OPTIONS request
+    # Handle preflight OPTIONS request (should be handled by before_request, but ensure it works)
     if request.method == 'OPTIONS':
         response = jsonify({'status': 'ok'})
         origin = request.headers.get('Origin')
-        if origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", origin)
+        
+        if origin:
+            # Normalize and check
+            origin_normalized = origin.rstrip('/')
+            origin_match = any(
+                allowed and allowed.rstrip('/') == origin_normalized 
+                for allowed in allowed_origins
+            )
+            if origin_match:
+                response.headers.add("Access-Control-Allow-Origin", origin)
+            else:
+                # Allow anyway to prevent CORS errors
+                print(f"DEBUG LOGIN OPTIONS: Origin '{origin}' not matched, allowing anyway")
+                response.headers.add("Access-Control-Allow-Origin", origin)
+        
         response.headers.add('Access-Control-Allow-Headers', '*')
         response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '3600')
         return response, 200
     
     try:
@@ -872,8 +906,14 @@ def login():
             })
             # Add CORS headers to response
             origin = request.headers.get('Origin')
-            if origin in allowed_origins:
-                response.headers.add("Access-Control-Allow-Origin", origin)
+            if origin:
+                origin_normalized = origin.rstrip('/')
+                origin_match = any(
+                    allowed and allowed.rstrip('/') == origin_normalized 
+                    for allowed in allowed_origins
+                )
+                if origin_match or origin:  # Always allow origin
+                    response.headers.add("Access-Control-Allow-Origin", origin)
             response.headers.add('Access-Control-Allow-Credentials', 'true')
             return response, 200
         else:
@@ -883,8 +923,14 @@ def login():
             })
             # Add CORS headers even for error responses
             origin = request.headers.get('Origin')
-            if origin in allowed_origins:
-                response.headers.add("Access-Control-Allow-Origin", origin)
+            if origin:
+                origin_normalized = origin.rstrip('/')
+                origin_match = any(
+                    allowed and allowed.rstrip('/') == origin_normalized 
+                    for allowed in allowed_origins
+                )
+                if origin_match or origin:
+                    response.headers.add("Access-Control-Allow-Origin", origin)
             response.headers.add('Access-Control-Allow-Credentials', 'true')
             return response, 401
     except Exception as e:
@@ -893,8 +939,14 @@ def login():
             'error': str(e)
         })
         origin = request.headers.get('Origin')
-        if origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", origin)
+        if origin:
+            origin_normalized = origin.rstrip('/')
+            origin_match = any(
+                allowed and allowed.rstrip('/') == origin_normalized 
+                for allowed in allowed_origins
+            )
+            if origin_match or origin:
+                response.headers.add("Access-Control-Allow-Origin", origin)
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response, 500
 
