@@ -1,5 +1,5 @@
 // API Configuration - Use same logic as common.js
-const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = window.API_BASE_URL || 'https://learning-app-9oo4.onrender.com/api';
 
 // Agent names mapping
 const AGENT_NAMES = {

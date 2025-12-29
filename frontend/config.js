@@ -10,4 +10,4 @@ const isLocalhost = window.location.hostname === 'localhost' ||
 window.API_BASE_URL = window.API_BASE_URL || 
     (isLocalhost 
         ? 'http://localhost:5000/api' 
-        : 'https://your-backend.onrender.com/api'); // Replace with your Render URL
+        : 'https://learning-app-9oo4.onrender.com/api'); // Replace with your Render URL

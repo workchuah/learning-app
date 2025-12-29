@@ -1,6 +1,6 @@
 // Common utilities and API configuration
 // Load config.js first, then use API_BASE_URL from window object
-const API_BASE_URL = window.API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = window.API_BASE_URL || 'https://learning-app-9oo4.onrender.com';
 
 // Get API keys from localStorage
 function getApiHeaders() {

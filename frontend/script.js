@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://learning-app-9oo4.onrender.com/api';
 
 // State Management
 let currentView = 'dashboard';
