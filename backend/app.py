@@ -188,7 +188,8 @@ except ConnectionFailure as e:
 # Collections
 def get_collection(name):
     """Get MongoDB collection or return None if not connected"""
-    if db:
+    # PyMongo Database objects do not implement truthiness, so we must compare with None explicitly
+    if db is not None:
         return db[name]
     return None
 
@@ -201,7 +202,7 @@ agent_api_keys = {}
 def save_to_db(collection_name, data_id, data):
     """Save data to MongoDB or fallback storage"""
     collection = get_collection(collection_name)
-    if collection:
+    if collection is not None:
         collection.update_one(
             {'_id': data_id},
             {'$set': data},
@@ -221,7 +222,7 @@ def save_to_db(collection_name, data_id, data):
 def get_from_db(collection_name, data_id):
     """Get data from MongoDB or fallback storage"""
     collection = get_collection(collection_name)
-    if collection:
+    if collection is not None:
         result = collection.find_one({'_id': data_id})
         if result:
             # Remove MongoDB's _id field for consistency
@@ -242,7 +243,7 @@ def get_from_db(collection_name, data_id):
 def get_all_from_db(collection_name):
     """Get all documents from MongoDB or fallback storage"""
     collection = get_collection(collection_name)
-    if collection:
+    if collection is not None:
         # Exclude _id field for consistency
         results = list(collection.find({}, {'_id': 0}))
         return results
@@ -261,7 +262,7 @@ def get_all_from_db(collection_name):
 def delete_from_db(collection_name, data_id):
     """Delete data from MongoDB or fallback storage"""
     collection = get_collection(collection_name)
-    if collection:
+    if collection is not None:
         collection.delete_one({'_id': data_id})
     else:
         # Fallback to in-memory
