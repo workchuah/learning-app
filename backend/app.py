@@ -51,8 +51,9 @@ def add_cors_headers(response):
     return response
 
 # Authentication Configuration
-VALID_USERID = 'chuahlearn'
-VALID_PASSWORD = 'chuahchuah'
+# Simple single-user login
+VALID_USERID = 'chuah'
+VALID_PASSWORD = 'chuah'
 
 def login_required(f):
     """Decorator to require login for API endpoints"""
