@@ -19,39 +19,18 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24).hex())  # Required for sessions
 
 # CORS configuration - Allow all origins (no restrictions)
+# Use flask-cors to handle all CORS automatically
 CORS(app, 
      resources={r"/api/*": {
          "origins": "*",
          "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
          "allow_headers": "*",
          "supports_credentials": True
-     }})
-
-# Add explicit OPTIONS handler for all routes - allow everything
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin', '*')
-        response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Max-Age', '3600')
-        return response
-
-# Add CORS headers to all responses
-@app.after_request
-def add_cors_headers(response):
-    origin = request.headers.get('Origin', '*')
-    response.headers.add("Access-Control-Allow-Origin", origin)
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Allow-Headers', '*')
-    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    return response
+     }},
+     automatic_options=True)
 
 # Authentication Configuration
-# Simple single-user login
+# Simple single-user login (will also be stored in database)
 VALID_USERID = 'chuah'
 VALID_PASSWORD = 'chuah'
 
@@ -166,6 +145,7 @@ courses_db = {}
 topics_db = {}
 progress_db = {}
 agent_api_keys = {}
+users_db = {}
 
 def save_to_db(collection_name, data_id, data):
     """Save data to MongoDB or fallback storage"""
@@ -186,6 +166,8 @@ def save_to_db(collection_name, data_id, data):
             progress_db[data_id] = data
         elif collection_name == 'agent_keys':
             agent_api_keys[data_id] = data
+        elif collection_name == 'users':
+            users_db[data_id] = data
 
 def get_from_db(collection_name, data_id):
     """Get data from MongoDB or fallback storage"""
@@ -207,6 +189,8 @@ def get_from_db(collection_name, data_id):
             return progress_db.get(data_id)
         elif collection_name == 'agent_keys':
             return agent_api_keys.get(data_id)
+        elif collection_name == 'users':
+            return users_db.get(data_id)
     
 def get_all_from_db(collection_name):
     """Get all documents from MongoDB or fallback storage"""
@@ -225,6 +209,8 @@ def get_all_from_db(collection_name):
             return list(progress_db.values())
         elif collection_name == 'agent_keys':
             return list(agent_api_keys.values())
+        elif collection_name == 'users':
+            return list(users_db.values())
     return []
 
 def delete_from_db(collection_name, data_id):
@@ -242,6 +228,27 @@ def delete_from_db(collection_name, data_id):
             del progress_db[data_id]
         elif collection_name == 'agent_keys' and data_id in agent_api_keys:
             del agent_api_keys[data_id]
+        elif collection_name == 'users' and data_id in users_db:
+            del users_db[data_id]
+
+
+def init_default_user():
+    """Ensure the default user exists in the database"""
+    try:
+        existing = get_from_db('users', VALID_USERID)
+        if not existing:
+            user_data = {
+                'username': VALID_USERID,
+                'password': VALID_PASSWORD,  # NOTE: plain text for now
+                'role': 'owner',
+                'created_at': datetime.utcnow().isoformat()
+            }
+            save_to_db('users', VALID_USERID, user_data)
+            print(f"✓ Default user created in DB: {VALID_USERID}")
+        else:
+            print(f"✓ Default user already exists in DB: {VALID_USERID}")
+    except Exception as e:
+        print(f"Warning: could not initialize default user: {e}")
 
 # Load agent keys from MongoDB on startup
 def load_agent_keys():
@@ -828,7 +835,23 @@ def login():
         userid = data.get('userid', '').strip()
         password = data.get('password', '')
         
-        if userid == VALID_USERID and password == VALID_PASSWORD:
+        # Try to get user from database
+        user_doc = get_from_db('users', userid)
+        is_valid = False
+        
+        if user_doc and user_doc.get('password') == password:
+            is_valid = True
+        elif userid == VALID_USERID and password == VALID_PASSWORD:
+            # Fallback to hardcoded user, also ensure it's stored in DB
+            user_data = {
+                'username': VALID_USERID,
+                'password': VALID_PASSWORD,
+                'role': 'owner'
+            }
+            save_to_db('users', VALID_USERID, user_data)
+            is_valid = True
+        
+        if is_valid:
             session['logged_in'] = True
             session['userid'] = userid
             response = jsonify({
