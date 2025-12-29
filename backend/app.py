@@ -820,15 +820,9 @@ def health_check():
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
     """User login endpoint"""
-    # Handle preflight OPTIONS request (handled by before_request, but keep for safety)
+    # OPTIONS handled automatically by flask-cors
     if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin', '*')
-        response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response, 200
+        return jsonify({'status': 'ok'}), 200
     
     try:
         data = request.json
@@ -854,69 +848,47 @@ def login():
         if is_valid:
             session['logged_in'] = True
             session['userid'] = userid
-            response = jsonify({
+            return jsonify({
                 'success': True,
                 'message': 'Login successful',
                 'userid': userid
-            })
-            # CORS headers added by after_request handler
-            return response, 200
+            }), 200
         else:
-            response = jsonify({
+            return jsonify({
                 'success': False,
                 'error': 'Invalid user ID or password'
-            })
-            # CORS headers added by after_request handler
-            return response, 401
+            }), 401
     except Exception as e:
-        response = jsonify({
+        return jsonify({
             'success': False,
             'error': str(e)
-        })
-        # CORS headers added by after_request handler
-        return response, 500
+        }), 500
 
 @app.route('/api/logout', methods=['POST', 'OPTIONS'])
 @login_required
 def logout():
     """User logout endpoint"""
-    # Handle preflight OPTIONS request (handled by before_request, but keep for safety)
+    # OPTIONS handled automatically by flask-cors
     if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin', '*')
-        response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response, 200
+        return jsonify({'status': 'ok'}), 200
     
     session.clear()
-    response = jsonify({
+    return jsonify({
         'success': True,
         'message': 'Logged out successfully'
-    })
-    # CORS headers added by after_request handler
-    return response, 200
+    }), 200
 
 @app.route('/api/check-auth', methods=['GET', 'OPTIONS'])
 def check_auth():
     """Check if user is authenticated"""
-    # Handle preflight OPTIONS request (handled by before_request, but keep for safety)
+    # OPTIONS handled automatically by flask-cors
     if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin', '*')
-        response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        return response, 200
+        return jsonify({'status': 'ok'}), 200
     
-    response = jsonify({
+    return jsonify({
         'authenticated': session.get('logged_in', False),
         'userid': session.get('userid') if session.get('logged_in') else None
-    })
-    # CORS headers added by after_request handler
-    return response, 200
+    }), 200
 
 # API Key Management Endpoints
 @app.route('/api/set-api-keys', methods=['POST'])
