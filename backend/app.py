@@ -45,13 +45,18 @@ def handle_options():
 VALID_USERID = 'chuah'
 VALID_PASSWORD = 'chuah'
 
-# For this personal app, backend routes are open.
-# The decorator is left as a no-op so existing code doesn't break.
 def login_required(f):
-    """Decorator kept for compatibility, but does not enforce auth."""
+    """Decorator to require login for API endpoints"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # No backend session check; frontend controls access
+        # Allow OPTIONS requests to pass through (handled by before_request)
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+        # Check if user is logged in
+        if not session.get('logged_in'):
+            response = jsonify({'error': 'Authentication required', 'authenticated': False})
+            # CORS headers added by after_request handler
+            return response, 401
         return f(*args, **kwargs)
     return decorated_function
 
