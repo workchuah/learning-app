@@ -18,86 +18,37 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24).hex())  # Required for sessions
 
-# CORS configuration - allow Netlify domain and localhost
-# Get frontend URL from environment or use default
-frontend_url = os.getenv('FRONTEND_URL', 'https://chuahlearningapp.netlify.app')
-
-# Build allowed origins list - include both the env var and hardcoded Netlify URL
-allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:8000",
-    "http://localhost:5000",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:5000",
-    "https://chuahlearningapp.netlify.app",  # Your Netlify URL
-    "https://chuahlearningapp.netlify.app/",  # With trailing slash
-    frontend_url,  # From environment variable
-    frontend_url.rstrip('/') if frontend_url else None,  # Without trailing slash
-    frontend_url.rstrip('/') + '/' if frontend_url else None  # With trailing slash
-]
-
-# Remove duplicates and filter out None values
-allowed_origins = list(set([origin for origin in allowed_origins if origin and origin.strip()]))
-
-print(f"CORS allowed origins: {allowed_origins}")
-
-# Build custom headers list for agent-specific API keys
-custom_headers = [
-    'Content-Type', 
-    'Authorization', 
-    'X-API-Provider', 
-    'X-OpenAI-API-Key', 
-    'X-Gemini-API-Key'
-]
-
-# Add agent-specific headers
-agents = ['course_structure', 'lecture_notes', 'tutorial', 'practical', 'quiz']
-for agent in agents:
-    custom_headers.extend([
-        f'X-Agent-{agent}-Provider',
-        f'X-Agent-{agent}-OpenAI-Key',
-        f'X-Agent-{agent}-Gemini-Key'
-    ])
-
-# Configure CORS with explicit settings
+# CORS configuration - Allow all origins (no restrictions)
 CORS(app, 
-     supports_credentials=True,
-     origins=allowed_origins,
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     allow_headers=['*'],  # Allow all headers for simplicity
-     expose_headers=['Content-Type'],
-     max_age=3600)
+     resources={r"/api/*": {
+         "origins": "*",
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": "*",
+         "supports_credentials": True
+     }})
 
-# Add explicit OPTIONS handler for all routes
+# Add explicit OPTIONS handler for all routes - allow everything
 @app.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
-        origin = request.headers.get('Origin')
         response = jsonify({'status': 'ok'})
-        
-        # Check if origin matches (with or without trailing slash)
-        origin_match = False
-        if origin:
-            # Normalize origin (remove trailing slash for comparison)
-            origin_normalized = origin.rstrip('/')
-            for allowed in allowed_origins:
-                if allowed and allowed.rstrip('/') == origin_normalized:
-                    origin_match = True
-                    break
-        
-        if origin_match:
-            response.headers.add("Access-Control-Allow-Origin", origin)
-        elif origin:  # If origin provided but not in list, still allow for debugging
-            # Log for debugging
-            print(f"WARNING: Origin {origin} not in allowed list: {allowed_origins}")
-            # Allow it anyway for now (you can remove this for production)
-            response.headers.add("Access-Control-Allow-Origin", origin)
-        
+        origin = request.headers.get('Origin', '*')
+        response.headers.add("Access-Control-Allow-Origin", origin)
         response.headers.add('Access-Control-Allow-Headers', '*')
         response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         response.headers.add('Access-Control-Max-Age', '3600')
         return response
+
+# Add CORS headers to all responses
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get('Origin', '*')
+    response.headers.add("Access-Control-Allow-Origin", origin)
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Allow-Headers', '*')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    return response
 
 # Authentication Configuration
 VALID_USERID = 'chuahlearn'
@@ -113,11 +64,7 @@ def login_required(f):
         # Check if user is logged in
         if not session.get('logged_in'):
             response = jsonify({'error': 'Authentication required', 'authenticated': False})
-            # Add CORS headers even for error responses
-            origin = request.headers.get('Origin')
-            if origin in allowed_origins:
-                response.headers.add("Access-Control-Allow-Origin", origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            # CORS headers added by after_request handler
             return response, 401
         return f(*args, **kwargs)
     return decorated_function
@@ -857,8 +804,7 @@ def health_check():
     """Health check endpoint"""
     response = jsonify({
         'status': 'healthy',
-        'cors_origins': allowed_origins,
-        'frontend_url': frontend_url
+        'cors': 'enabled_for_all_origins'
     })
     return response, 200
 
@@ -866,29 +812,14 @@ def health_check():
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
     """User login endpoint"""
-    # Handle preflight OPTIONS request (should be handled by before_request, but ensure it works)
+    # Handle preflight OPTIONS request (handled by before_request, but keep for safety)
     if request.method == 'OPTIONS':
         response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin')
-        
-        if origin:
-            # Normalize and check
-            origin_normalized = origin.rstrip('/')
-            origin_match = any(
-                allowed and allowed.rstrip('/') == origin_normalized 
-                for allowed in allowed_origins
-            )
-            if origin_match:
-                response.headers.add("Access-Control-Allow-Origin", origin)
-            else:
-                # Allow anyway to prevent CORS errors
-                print(f"DEBUG LOGIN OPTIONS: Origin '{origin}' not matched, allowing anyway")
-                response.headers.add("Access-Control-Allow-Origin", origin)
-        
+        origin = request.headers.get('Origin', '*')
+        response.headers.add("Access-Control-Allow-Origin", origin)
         response.headers.add('Access-Control-Allow-Headers', '*')
         response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Max-Age', '3600')
         return response, 200
     
     try:
@@ -904,62 +835,32 @@ def login():
                 'message': 'Login successful',
                 'userid': userid
             })
-            # Add CORS headers to response
-            origin = request.headers.get('Origin')
-            if origin:
-                origin_normalized = origin.rstrip('/')
-                origin_match = any(
-                    allowed and allowed.rstrip('/') == origin_normalized 
-                    for allowed in allowed_origins
-                )
-                if origin_match or origin:  # Always allow origin
-                    response.headers.add("Access-Control-Allow-Origin", origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            # CORS headers added by after_request handler
             return response, 200
         else:
             response = jsonify({
                 'success': False,
                 'error': 'Invalid user ID or password'
             })
-            # Add CORS headers even for error responses
-            origin = request.headers.get('Origin')
-            if origin:
-                origin_normalized = origin.rstrip('/')
-                origin_match = any(
-                    allowed and allowed.rstrip('/') == origin_normalized 
-                    for allowed in allowed_origins
-                )
-                if origin_match or origin:
-                    response.headers.add("Access-Control-Allow-Origin", origin)
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            # CORS headers added by after_request handler
             return response, 401
     except Exception as e:
         response = jsonify({
             'success': False,
             'error': str(e)
         })
-        origin = request.headers.get('Origin')
-        if origin:
-            origin_normalized = origin.rstrip('/')
-            origin_match = any(
-                allowed and allowed.rstrip('/') == origin_normalized 
-                for allowed in allowed_origins
-            )
-            if origin_match or origin:
-                response.headers.add("Access-Control-Allow-Origin", origin)
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        # CORS headers added by after_request handler
         return response, 500
 
 @app.route('/api/logout', methods=['POST', 'OPTIONS'])
 @login_required
 def logout():
     """User logout endpoint"""
-    # Handle preflight OPTIONS request
+    # Handle preflight OPTIONS request (handled by before_request, but keep for safety)
     if request.method == 'OPTIONS':
         response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin')
-        if origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", origin)
+        origin = request.headers.get('Origin', '*')
+        response.headers.add("Access-Control-Allow-Origin", origin)
         response.headers.add('Access-Control-Allow-Headers', '*')
         response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -970,21 +871,17 @@ def logout():
         'success': True,
         'message': 'Logged out successfully'
     })
-    origin = request.headers.get('Origin')
-    if origin in allowed_origins:
-        response.headers.add("Access-Control-Allow-Origin", origin)
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    # CORS headers added by after_request handler
     return response, 200
 
 @app.route('/api/check-auth', methods=['GET', 'OPTIONS'])
 def check_auth():
     """Check if user is authenticated"""
-    # Handle preflight OPTIONS request
+    # Handle preflight OPTIONS request (handled by before_request, but keep for safety)
     if request.method == 'OPTIONS':
         response = jsonify({'status': 'ok'})
-        origin = request.headers.get('Origin')
-        if origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", origin)
+        origin = request.headers.get('Origin', '*')
+        response.headers.add("Access-Control-Allow-Origin", origin)
         response.headers.add('Access-Control-Allow-Headers', '*')
         response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -994,11 +891,7 @@ def check_auth():
         'authenticated': session.get('logged_in', False),
         'userid': session.get('userid') if session.get('logged_in') else None
     })
-    # Add CORS headers
-    origin = request.headers.get('Origin')
-    if origin in allowed_origins:
-        response.headers.add("Access-Control-Allow-Origin", origin)
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    # CORS headers added by after_request handler
     return response, 200
 
 # API Key Management Endpoints
