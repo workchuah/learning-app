@@ -17,14 +17,50 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24).hex())  # Required for sessions
 
-# CORS configuration - allow Netlify domain
+# CORS configuration - allow Netlify domain and localhost
+# Get frontend URL from environment or use default
+frontend_url = os.getenv('FRONTEND_URL', 'https://chuahlearningapp.netlify.app')
+
+# Build allowed origins list - include both the env var and hardcoded Netlify URL
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://localhost:5000",
+    "http://127.0.0.1:8000",
+    "http://127.0.0.1:5000",
+    "https://chuahlearningapp.netlify.app",  # Your Netlify URL
+    frontend_url  # From environment variable
+]
+
+# Remove duplicates and filter out None values
+allowed_origins = list(set([origin for origin in allowed_origins if origin]))
+
+print(f"CORS allowed origins: {allowed_origins}")
+
+# Build custom headers list for agent-specific API keys
+custom_headers = [
+    'Content-Type', 
+    'Authorization', 
+    'X-API-Provider', 
+    'X-OpenAI-API-Key', 
+    'X-Gemini-API-Key'
+]
+
+# Add agent-specific headers
+agents = ['course_structure', 'lecture_notes', 'tutorial', 'practical', 'quiz']
+for agent in agents:
+    custom_headers.extend([
+        f'X-Agent-{agent}-Provider',
+        f'X-Agent-{agent}-OpenAI-Key',
+        f'X-Agent-{agent}-Gemini-Key'
+    ])
+
 CORS(app, 
      supports_credentials=True,
-     origins=[
-         "http://localhost:3000",
-         "http://localhost:8000",
-         os.getenv('FRONTEND_URL', 'https://your-app-name.netlify.app')
-     ])
+     origins=allowed_origins,
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     allow_headers=custom_headers,
+     expose_headers=['Content-Type'])
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -750,10 +786,15 @@ def get_topic_content(topic_id):
     
     return jsonify(content), 200
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy'}), 200
+    response = jsonify({
+        'status': 'healthy',
+        'cors_origins': allowed_origins,
+        'frontend_url': frontend_url
+    })
+    return response, 200
 
 # API Key Management Endpoints
 @app.route('/api/set-api-keys', methods=['POST'])
