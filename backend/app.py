@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, session, send_from_directory
-from flask_cors import CORS  # type: ignore
 import os
 import json
 import uuid
@@ -18,16 +17,28 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24).hex())  # Required for sessions
 
-# CORS configuration - Allow all origins (no restrictions)
-# Use flask-cors to handle all CORS automatically
-CORS(app, 
-     resources={r"/api/*": {
-         "origins": "*",
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "allow_headers": "*",
-         "supports_credentials": True
-     }},
-     automatic_options=True)
+# Simple CORS handler - add headers to all responses
+@app.after_request
+def add_cors_headers(response):
+    """Add CORS headers to all responses - simple and clean"""
+    origin = request.headers.get('Origin', '*')
+    # Only set headers if not already set (prevent duplicates)
+    if 'Access-Control-Allow-Origin' not in response.headers:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    if 'Access-Control-Allow-Credentials' not in response.headers:
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    if 'Access-Control-Allow-Methods' not in response.headers:
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    if 'Access-Control-Allow-Headers' not in response.headers:
+        response.headers['Access-Control-Allow-Headers'] = '*'
+    return response
+
+# Handle OPTIONS preflight requests
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        return response
 
 # Authentication Configuration
 # Simple single-user login (will also be stored in database)
