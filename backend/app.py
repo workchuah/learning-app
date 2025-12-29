@@ -45,15 +45,11 @@ def handle_options():
 VALID_USERID = 'chuah'
 VALID_PASSWORD = 'chuah'
 
-# For this personal app, backend routes are open.
-# The decorator is left as a no-op so existing code doesn't break.
+# For this personal app, backend routes are open - no authentication required
+# Removed login_required decorator - all routes are public
 def login_required(f):
-    """Decorator kept for compatibility, but does not enforce auth."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # No backend session check; frontend controls access
-        return f(*args, **kwargs)
-    return decorated_function
+    """No-op decorator - all routes are public for this personal app"""
+    return f
 
 # Configuration
 UPLOAD_FOLDER = 'uploads'
@@ -731,10 +727,12 @@ def get_course(course_id):
     return jsonify(course), 200
 
 @app.route('/api/courses', methods=['GET'])
-@login_required
 def get_all_courses():
-    """Get all courses"""
+    """Get all courses - public endpoint"""
     courses = get_all_from_db('courses')
+    # Ensure we always return a list
+    if courses is None:
+        courses = []
     return jsonify(courses), 200
 
 @app.route('/api/topics/<topic_id>/generate-content', methods=['POST'])
