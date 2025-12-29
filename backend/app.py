@@ -56,12 +56,28 @@ for agent in agents:
         f'X-Agent-{agent}-Gemini-Key'
     ])
 
+# Configure CORS with explicit settings
 CORS(app, 
      supports_credentials=True,
      origins=allowed_origins,
      methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     allow_headers=custom_headers,
-     expose_headers=['Content-Type'])
+     allow_headers=['*'],  # Allow all headers for simplicity
+     expose_headers=['Content-Type'],
+     max_age=3600)
+
+# Add explicit OPTIONS handler for all routes
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'status': 'ok'})
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '3600')
+        return response
 
 # Authentication Configuration
 VALID_USERID = 'chuahlearn'
@@ -71,9 +87,18 @@ def login_required(f):
     """Decorator to require login for API endpoints"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Allow OPTIONS requests to pass through (handled by before_request)
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
         # Check if user is logged in
         if not session.get('logged_in'):
-            return jsonify({'error': 'Authentication required', 'authenticated': False}), 401
+            response = jsonify({'error': 'Authentication required', 'authenticated': False})
+            # Add CORS headers even for error responses
+            origin = request.headers.get('Origin')
+            if origin in allowed_origins:
+                response.headers.add("Access-Control-Allow-Origin", origin)
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            return response, 401
         return f(*args, **kwargs)
     return decorated_function
 
@@ -814,6 +839,113 @@ def health_check():
         'cors_origins': allowed_origins,
         'frontend_url': frontend_url
     })
+    return response, 200
+
+# Authentication Endpoints (no login required)
+@app.route('/api/login', methods=['POST', 'OPTIONS'])
+def login():
+    """User login endpoint"""
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
+    
+    try:
+        data = request.json
+        userid = data.get('userid', '').strip()
+        password = data.get('password', '')
+        
+        if userid == VALID_USERID and password == VALID_PASSWORD:
+            session['logged_in'] = True
+            session['userid'] = userid
+            response = jsonify({
+                'success': True,
+                'message': 'Login successful',
+                'userid': userid
+            })
+            # Add CORS headers to response
+            origin = request.headers.get('Origin')
+            if origin in allowed_origins:
+                response.headers.add("Access-Control-Allow-Origin", origin)
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            return response, 200
+        else:
+            response = jsonify({
+                'success': False,
+                'error': 'Invalid user ID or password'
+            })
+            # Add CORS headers even for error responses
+            origin = request.headers.get('Origin')
+            if origin in allowed_origins:
+                response.headers.add("Access-Control-Allow-Origin", origin)
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            return response, 401
+    except Exception as e:
+        response = jsonify({
+            'success': False,
+            'error': str(e)
+        })
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 500
+
+@app.route('/api/logout', methods=['POST', 'OPTIONS'])
+@login_required
+def logout():
+    """User logout endpoint"""
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
+    
+    session.clear()
+    response = jsonify({
+        'success': True,
+        'message': 'Logged out successfully'
+    })
+    origin = request.headers.get('Origin')
+    if origin in allowed_origins:
+        response.headers.add("Access-Control-Allow-Origin", origin)
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response, 200
+
+@app.route('/api/check-auth', methods=['GET', 'OPTIONS'])
+def check_auth():
+    """Check if user is authenticated"""
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        origin = request.headers.get('Origin')
+        if origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", origin)
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response, 200
+    
+    response = jsonify({
+        'authenticated': session.get('logged_in', False),
+        'userid': session.get('userid') if session.get('logged_in') else None
+    })
+    # Add CORS headers
+    origin = request.headers.get('Origin')
+    if origin in allowed_origins:
+        response.headers.add("Access-Control-Allow-Origin", origin)
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
     return response, 200
 
 # API Key Management Endpoints
