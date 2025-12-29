@@ -2,26 +2,10 @@
 // Load config.js first, then use API_BASE_URL from window object
 const API_BASE_URL = window.API_BASE_URL || 'https://learning-app-9oo4.onrender.com/api';
 
-// Authentication check function
-async function checkAuthentication() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/check-auth`, {
-            method: 'GET',
-            credentials: 'include'
-        });
-        const data = await response.json();
-        return data.authenticated === true;
-    } catch (error) {
-        console.error('Auth check error:', error);
-        return false;
-    }
-}
-
-// Redirect to login if not authenticated
+// Redirect to login if not authenticated (frontend-only check)
 async function requireAuth() {
-    const isAuthenticated = await checkAuthentication();
-    if (!isAuthenticated) {
-        sessionStorage.removeItem('isLoggedIn');
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn) {
         window.location.href = 'login.html';
         return false;
     }
@@ -31,10 +15,11 @@ async function requireAuth() {
 // Logout function
 async function logout() {
     try {
+        // Backend logout not strictly needed now, but keep call in case we add sessions later
         await fetch(`${API_BASE_URL}/logout`, {
             method: 'POST',
             credentials: 'include'
-        });
+        }).catch(() => {});
     } catch (error) {
         console.error('Logout error:', error);
     } finally {
