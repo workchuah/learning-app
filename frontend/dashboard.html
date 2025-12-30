@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Chuah Learning App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <a href="dashboard.html" class="logo">📚 Chuah Learning</a>
+    </div>
+    <div class="header-right">
+      <a href="admin-settings.html" class="header-nav-link">⚙️ Settings</a>
+      <button class="btn btn-secondary" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 1200px; padding: 40px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <h1>My Courses</h1>
+      <button class="btn btn-primary" id="create-course-btn">+ Create New Course</button>
+    </div>
+
+    <div id="error-message" class="alert alert-error hidden"></div>
+    <div id="success-message" class="alert alert-success hidden"></div>
+
+    <div id="courses-container" class="courses-grid">
+      <!-- Courses will be loaded here -->
+    </div>
+
+    <div id="loading" class="text-center" style="display: none; padding: 40px;">
+      <div class="spinner"></div>
+      <p style="margin-top: 16px; color: #64748b;">Loading courses...</p>
+    </div>
+  </main>
+
+  <!-- Create Course Modal -->
+  <div id="create-course-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create New Course</h2>
+        <button class="modal-close" id="close-modal">&times;</button>
+      </div>
+      <form id="create-course-form">
+        <div class="form-group">
+          <label class="form-label" for="course-title">Course Title *</label>
+          <input type="text" id="course-title" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="course-goal">Course Goal *</label>
+          <textarea id="course-goal" class="form-input" rows="3" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="course-timeline">Target Timeline *</label>
+          <input type="text" id="course-timeline" class="form-input" placeholder="e.g., 4 weeks, 2 months" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="course-outline">Course Outline (Optional)</label>
+          <input type="file" id="course-outline" class="form-input" accept=".pdf,.txt,.md">
+          <small style="color: #64748b; font-size: 12px;">Upload PDF, TXT, or MD file. If not provided, AI will design the course structure.</small>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-course-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Course</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
+

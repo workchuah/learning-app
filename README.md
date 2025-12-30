@@ -1,194 +1,151 @@
-# AI Learning Web App
+# Chuah Learning App
 
-A comprehensive learning web application with AI assistance for course creation, content generation, and progress tracking.
+A production-ready learning web application with AI-assisted course generation and progress tracking.
 
 ## Features
 
-1. **Course Creation**: Create main courses with optional course structure/outline upload
-2. **AI-Powered Breakdown**: Automatically breaks down courses into modules and topics
-3. **Content Generation**: AI generates comprehensive content for each topic including:
-   - Lecture Notes (detailed explanations)
-   - Tutorial Exercises
-   - Practical/Hands-on Exercises
-   - Exam Quizzes
-4. **Progress Tracking**: Track your learning progress across all courses and topics
+- **Course Creation**: Create courses with title, goal, and timeline. Optionally upload course outlines (PDF/TXT/MD).
+- **AI Course Structure**: AI automatically breaks courses into Modules and Topics.
+- **AI Content Generation**: For each topic, AI generates:
+  - Detailed lecture notes
+  - Tutorial exercises with answers
+  - Practical tasks with step-by-step instructions
+  - Exam quizzes (MCQ + short answers) with answer keys and explanations
+- **Progress Tracking**: Track learning progress per course/module/topic with timestamps and quiz scores.
+- **Multi-Agent AI**: Uses OpenAI and Google Gemini with automatic fallback.
 
-## AI Agent Architecture
+## Tech Stack
 
-The app uses **5 specialized AI agents**, each with a unique role and expertise:
+- **Backend**: Node.js, Express, MongoDB
+- **Frontend**: Vanilla HTML, CSS, JavaScript
+- **AI Providers**: OpenAI, Google Gemini
+- **Deployment**: Backend on Render, Frontend on Netlify
 
-1. **Course Structure Designer Agent** 🎓
-   - Role: Expert course designer and curriculum developer
-   - Responsibility: Breaks down courses into logical modules and topics
-   - Creates progressive learning paths that build knowledge systematically
+## Quick Start
 
-2. **Lecture Notes Writer Agent** 📝
-   - Role: Master educator and content writer
-   - Responsibility: Creates comprehensive, detailed lecture notes
-   - Ensures all key concepts are thoroughly explained with examples
+### Backend Setup
 
-3. **Tutorial Exercise Designer Agent** 📚
-   - Role: Expert tutorial designer
-   - Responsibility: Creates step-by-step tutorial exercises and practice problems
-   - Designs progressive exercises that build skills gradually
+1. Navigate to backend directory:
+```bash
+cd backend
+```
 
-4. **Practical Exercise Designer Agent** 🔧
-   - Role: Expert in hands-on, real-world exercises
-   - Responsibility: Creates practical exercises that bridge theory and practice
-   - Designs real-world scenarios and projects
+2. Install dependencies:
+```bash
+npm install
+```
 
-5. **Quiz Creator Agent** ✅
-   - Role: Expert assessment designer
-   - Responsibility: Creates comprehensive exam quizzes
-   - Writes clear questions that test understanding, not just memorization
+3. Create `.env` file:
+```bash
+cp .env.example .env
+```
 
-Each agent uses specialized system prompts and is optimized for its specific task, ensuring high-quality, role-appropriate content generation.
+4. Configure environment variables:
+- `MONGODB_URI`: Your MongoDB connection string
+- `JWT_SECRET`: A random secret string
+- `CLIENT_ORIGINS`: Comma-separated frontend URLs
+- `OPENAI_API_KEY`: Your OpenAI API key (optional)
+- `GEMINI_API_KEY`: Your Google Gemini API key (optional)
+
+5. Start the server:
+```bash
+npm run dev  # Development
+npm start    # Production
+```
+
+### Frontend Setup
+
+1. Navigate to frontend directory:
+```bash
+cd frontend
+```
+
+2. Update API URL in `js/config.js`:
+```javascript
+const API_BASE_URL = 'http://localhost:5000/api';
+```
+
+3. Start a local server:
+```bash
+python -m http.server 3000
+```
+
+4. Open `http://localhost:3000/login.html`
+
+## Default Admin Credentials
+
+- **User ID**: `chuahadmin`
+- **Password**: `chuahchuah`
 
 ## Project Structure
 
 ```
 15-chuah-learning-app/
-├── frontend/
-│   ├── index.html          # Dashboard
-│   ├── create-course.html  # Create new course
-│   ├── course-detail.html  # Course modules and topics
-│   ├── topic-detail.html    # Topic content view
-│   ├── progress.html        # Progress tracking
-│   ├── settings.html        # API key configuration
-│   ├── style.css            # All styling
-│   ├── config.js            # API configuration
-│   ├── common.js            # Shared utilities
-│   └── *.js                 # Page-specific JavaScript
 ├── backend/
-│   ├── app.py              # Flask backend with AI integration
-│   ├── requirements.txt    # Python dependencies
-│   ├── Procfile            # Render deployment config
-│   ├── render.yaml         # Render service config
-│   └── .env.example        # Environment variables template
-├── DEPLOYMENT.md           # Deployment guide
+│   ├── src/
+│   │   ├── config/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── utils/
+│   ├── server.js
+│   ├── package.json
+│   └── README.md
+├── frontend/
+│   ├── css/
+│   ├── js/
+│   ├── *.html
+│   └── README.md
 └── README.md
 ```
 
-## Local Development Setup
+## Deployment
 
-### Backend Setup
+### Backend (Render)
 
-1. Navigate to the backend directory:
-```bash
-cd backend
-```
+1. Push code to GitHub
+2. Connect repository to Render
+3. Use the `render.yaml` configuration
+4. Set environment variables in Render dashboard
 
-2. Create a virtual environment (recommended):
-```bash
-python -m venv venv
-```
+### Frontend (Netlify)
 
-3. Activate the virtual environment:
-   - Windows: `venv\Scripts\activate`
-   - Mac/Linux: `source venv/bin/activate`
-
-4. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-5. Create a `.env` file:
-```bash
-copy .env.example .env  # Windows
-# or
-cp .env.example .env    # Mac/Linux
-```
-
-6. Edit `.env` and configure:
-   - MongoDB URI (or leave empty for in-memory storage)
-   - API keys (optional - can be set in frontend settings)
-
-7. Run the Flask server:
-```bash
-python app.py
-```
-
-The backend will run on `http://localhost:5000`
-
-### Frontend Setup
-
-1. Open `frontend/index.html` in a web browser, or use a local server:
-
-   **Option 1: Using Python's built-in server**
-   ```bash
-   cd frontend
-   python -m http.server 8000
-   ```
-   Then open `http://localhost:8000` in your browser
-
-   **Option 2: Using Node.js http-server**
-   ```bash
-   npx http-server frontend -p 8000
-   ```
-
-## Production Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions on deploying to:
-- **GitHub** - Version control
-- **MongoDB Atlas** - Database
-- **Render** - Backend hosting
-- **Netlify** - Frontend hosting
-
-## Usage
-
-1. **Configure API Keys**:
-   - Go to Settings page
-   - Configure API keys for each AI agent
-   - Choose provider (OpenAI or Gemini) for each agent
-   - Test and save
-
-2. **Create a Course**:
-   - Click "Create New Course"
-   - Enter course name and description
-   - Optionally upload a course structure/outline file
-   - If no file is uploaded, AI will generate the course structure
-
-3. **View Course Structure**:
-   - Click on any course card to view modules and topics
-   - Expand modules to see topics
-   - Click on topics to view details
-
-4. **Generate Content**:
-   - Open a topic
-   - Click "Generate Content" to create:
-     - Lecture Notes
-     - Tutorial Exercises
-     - Practical Exercises
-     - Exam Quiz
-
-5. **Track Progress**:
-   - Navigate to "Progress" to see overall learning statistics
-   - Mark topics as complete when finished
-   - Take quizzes to test your knowledge
+1. Push code to GitHub
+2. Connect repository to Netlify
+3. Set build directory to `frontend`
+4. Deploy
 
 ## API Endpoints
 
-- `POST /api/courses` - Create a new course
+### Authentication
+- `POST /api/auth/login` - Login
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/check` - Check auth status
+
+### Courses
+- `POST /api/courses` - Create course
 - `GET /api/courses` - Get all courses
-- `GET /api/courses/<course_id>` - Get course details
-- `POST /api/courses/<course_id>/generate-structure` - Generate course structure
-- `POST /api/topics/<topic_id>/generate-content` - Generate topic content
-- `GET /api/topics/<topic_id>` - Get topic content
-- `GET /api/progress` - Get all progress data
+- `GET /api/courses/:id` - Get course details
+- `POST /api/courses/:id/generate-structure` - Generate course structure
+- `DELETE /api/courses/:id` - Delete course
+
+### Topics
+- `GET /api/topics/:id` - Get topic details
+- `POST /api/topics/:id/generate-content` - Generate topic content
+- `PATCH /api/topics/:id/practical-task` - Update task completion
+
+### Progress
 - `POST /api/progress` - Update progress
-- `POST /api/set-agent-api-keys` - Set agent API keys
-- `POST /api/test-api-key` - Test API key
-- `GET /api/health` - Health check
+- `GET /api/progress` - Get progress records
+- `GET /api/progress/course/:courseId` - Get course progress
 
-## Technologies Used
-
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Backend**: Python, Flask
-- **Database**: MongoDB Atlas (with in-memory fallback)
-- **AI**: OpenAI GPT-4 API, Google Gemini API
-- **Deployment**: Render (backend), Netlify (frontend)
-- **Storage**: MongoDB Atlas (production), LocalStorage (frontend), In-memory (backend fallback)
+### Admin
+- `GET /api/admin/settings` - Get AI settings
+- `PATCH /api/admin/settings` - Update AI settings
 
 ## License
 
-This project is for educational purposes.
+© 2024 Chuah Learning App. All rights reserved.
+

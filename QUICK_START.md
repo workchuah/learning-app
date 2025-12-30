@@ -1,113 +1,133 @@
-# Quick Start Deployment Guide
+# Quick Start Guide
 
-## 🚀 Deploy in 5 Steps
+## Prerequisites
 
-### Step 1: Set Up MongoDB Atlas (5 minutes)
+- Node.js (v14 or higher)
+- MongoDB (local or MongoDB Atlas)
+- OpenAI API key (optional, for AI features)
+- Google Gemini API key (optional, for AI features)
 
-1. Go to https://www.mongodb.com/cloud/atlas
-2. Sign up for free account
-3. Create a free cluster (M0)
-4. Create database user:
-   - Database Access → Add New Database User
-   - Username: `learningapp`
-   - Password: Generate secure password (save it!)
-5. Network Access → Add IP Address → Allow Access from Anywhere (0.0.0.0/0)
-6. Get connection string:
-   - Clusters → Connect → Connect your application
-   - Copy connection string
-   - Replace `<password>` with your password
-   - Add database name: `...mongodb.net/learning_app`
+## Backend Setup
 
-**Example:** `mongodb+srv://learningapp:YourPassword123@cluster0.xxxxx.mongodb.net/learning_app`
-
-### Step 2: Push to GitHub (2 minutes)
-
+1. **Navigate to backend directory:**
 ```bash
-cd d:\OneDrive\PythonProject\15-chuah-learning-app
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/learning-app.git
-git push -u origin main
+cd 15-chuah-learning-app/backend
 ```
 
-### Step 3: Deploy Backend to Render (5 minutes)
+2. **Install dependencies:**
+```bash
+npm install
+```
 
-1. Go to https://dashboard.render.com/
-2. Click "New +" → "Web Service"
-3. Connect GitHub → Select your repository
-4. Configure:
-   - **Name:** `learning-app-backend`
-   - **Root Directory:** `backend`
-   - **Environment:** `Python 3`
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `gunicorn app:app`
-5. Add Environment Variables:
-   ```
-   MONGODB_URI=mongodb+srv://learningapp:YourPassword@cluster0.xxxxx.mongodb.net/learning_app
-   DB_NAME=learning_app
-   SECRET_KEY=generate-random-string-here
-   FRONTEND_URL=https://your-app-name.netlify.app (update after Netlify)
-   ```
-6. Click "Create Web Service"
-7. Wait for deployment (2-3 minutes)
-8. Copy your Render URL: `https://learning-app-backend.onrender.com`
+3. **Create `.env` file:**
+```bash
+# Copy the example file
+# Then edit .env and add your values
+```
 
-### Step 4: Deploy Frontend to Netlify (3 minutes)
+4. **Configure `.env` file:**
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/chuah-learning-app?retryWrites=true&w=majority
+JWT_SECRET=your-random-secret-key-here
+CLIENT_ORIGINS=http://localhost:3000,http://localhost:8080
+OPENAI_API_KEY=sk-your-openai-key
+GEMINI_API_KEY=your-gemini-key
+PORT=5000
+```
 
-1. **Update API URL:**
-   - Edit `frontend/config.js`
-   - Replace `https://your-backend.onrender.com/api` with your Render URL
+5. **Start the backend:**
+```bash
+npm run dev  # Development mode with auto-reload
+# OR
+npm start    # Production mode
+```
 
-2. **Push to GitHub:**
-   ```bash
-   git add frontend/config.js
-   git commit -m "Update API URL"
-   git push
-   ```
+The backend will start on `http://localhost:5000`
 
-3. **Deploy to Netlify:**
-   - Go to https://app.netlify.com/
-   - "Add new site" → "Import an existing project"
-   - Connect GitHub → Select repository
-   - Configure:
-     - **Base directory:** `frontend`
-     - **Build command:** (leave empty)
-     - **Publish directory:** `frontend`
-   - Click "Deploy site"
-   - Copy your Netlify URL: `https://your-app-name.netlify.app`
+## Frontend Setup
 
-4. **Update Backend CORS:**
-   - Go back to Render → Environment
-   - Update `FRONTEND_URL` with your Netlify URL
-   - Save changes (will auto-redeploy)
+1. **Navigate to frontend directory:**
+```bash
+cd 15-chuah-learning-app/frontend
+```
 
-### Step 5: Configure API Keys (2 minutes)
+2. **Update API URL in `js/config.js`:**
+```javascript
+const API_BASE_URL = 'http://localhost:5000/api';
+```
 
-1. Visit your Netlify URL
-2. Go to Settings page
-3. Configure API keys for each agent
-4. Test and save
+3. **Start a local server:**
+```bash
+# Option 1: Python
+python -m http.server 3000
 
-## ✅ Done!
+# Option 2: Node.js (if you have http-server)
+npx http-server -p 3000
 
-Your app is now live! 🎉
+# Option 3: PHP
+php -S localhost:3000
+```
 
-- **Frontend:** https://your-app-name.netlify.app
-- **Backend:** https://learning-app-backend.onrender.com
-- **Database:** MongoDB Atlas
+4. **Open in browser:**
+```
+http://localhost:3000/login.html
+```
+
+## Default Login
+
+- **User ID:** `chuahadmin`
+- **Password:** `chuahchuah`
+
+## First Steps
+
+1. **Login** with the default admin credentials
+2. **Create a Course:**
+   - Click "Create New Course"
+   - Fill in title, goal, and timeline
+   - Optionally upload a course outline (PDF/TXT/MD)
+   - Click "Create Course"
+
+3. **Generate Course Structure:**
+   - Open your course
+   - Click "Generate Course Structure"
+   - Wait for AI to create modules and topics
+
+4. **Generate Topic Content:**
+   - Click on a topic
+   - Click "Generate Topic Content"
+   - Wait for AI to generate lecture notes, exercises, tasks, and quiz
+
+5. **Configure AI Settings:**
+   - Go to Settings
+   - Check API key status
+   - Select AI provider preference
+   - Choose models
 
 ## Troubleshooting
 
-**Backend not connecting to MongoDB?**
-- Check MongoDB Atlas IP whitelist includes 0.0.0.0/0
-- Verify connection string is correct
-- Check Render logs for errors
+### Backend won't start
+- Check MongoDB connection string
+- Ensure JWT_SECRET is set
+- Check if port 5000 is available
 
-**Frontend can't reach backend?**
-- Verify `FRONTEND_URL` in Render matches Netlify URL
-- Check `config.js` has correct Render URL
-- Check browser console for CORS errors
+### Frontend can't connect to backend
+- Verify backend is running on port 5000
+- Check CORS settings in backend `.env`
+- Ensure API_BASE_URL in `js/config.js` is correct
 
-**Need help?** Check `DEPLOYMENT.md` for detailed instructions.
+### AI features not working
+- Verify API keys are set in backend `.env`
+- Check API key status in Admin Settings
+- Ensure you have credits/quota for the AI providers
+
+### MongoDB connection issues
+- Verify connection string format
+- Check network access in MongoDB Atlas
+- Ensure IP is whitelisted (or use 0.0.0.0/0 for development)
+
+## Next Steps
+
+- Read the full README.md for detailed documentation
+- Check backend/README.md for API documentation
+- Check frontend/README.md for frontend details
+

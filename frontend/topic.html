@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topic - Chuah Learning App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <a href="dashboard.html" class="logo">📚 Chuah Learning</a>
+    </div>
+    <div class="header-right">
+      <a href="#" id="back-link" class="header-nav-link">← Back to Course</a>
+      <a href="admin-settings.html" class="header-nav-link">⚙️ Settings</a>
+      <button class="btn btn-secondary" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 1000px; padding: 40px 20px;">
+    <div id="loading" class="text-center" style="display: none; padding: 40px;">
+      <div class="spinner"></div>
+      <p style="margin-top: 16px; color: #64748b;">Loading topic...</p>
+    </div>
+
+    <div id="topic-content" style="display: none;">
+      <h1 id="topic-title"></h1>
+      
+      <div id="error-message" class="alert alert-error hidden"></div>
+      <div id="success-message" class="alert alert-success hidden"></div>
+
+      <!-- Generate Content Button -->
+      <div id="generate-content-section" style="margin-bottom: 30px;">
+        <div class="card">
+          <p>This topic hasn't been generated yet. Click the button below to generate lecture notes, exercises, tasks, and quiz.</p>
+          <button class="btn btn-primary" id="generate-content-btn">Generate Topic Content</button>
+        </div>
+      </div>
+
+      <!-- Lecture Notes -->
+      <section id="lecture-notes-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>📖 Lecture Notes</h2>
+        <div id="lecture-notes-content" class="markdown-content"></div>
+      </section>
+
+      <!-- Tutorial Exercises -->
+      <section id="tutorial-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>✏️ Tutorial Exercises</h2>
+        <div id="tutorial-exercises-content"></div>
+      </section>
+
+      <!-- Practical Tasks -->
+      <section id="practical-tasks-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>🔧 Practical Tasks</h2>
+        <div id="practical-tasks-content"></div>
+      </section>
+
+      <!-- Quiz -->
+      <section id="quiz-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>📝 Quiz</h2>
+        <div id="quiz-content"></div>
+        <div id="quiz-results" style="display: none; margin-top: 20px;"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/topic.js"></script>
+</body>
+</html>
+

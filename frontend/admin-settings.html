@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Settings - Chuah Learning App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <a href="dashboard.html" class="logo">📚 Chuah Learning</a>
+    </div>
+    <div class="header-right">
+      <a href="dashboard.html" class="header-nav-link">← Back to Dashboard</a>
+      <button class="btn btn-secondary" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="container" style="max-width: 800px; padding: 40px 20px;">
+    <h1>Admin Settings</h1>
+    
+    <div id="error-message" class="alert alert-error hidden"></div>
+    <div id="success-message" class="alert alert-success hidden"></div>
+
+    <div class="card" style="margin-top: 30px;">
+      <h2>AI Provider Configuration</h2>
+      
+      <div style="margin-top: 20px;">
+        <div class="form-group">
+          <label class="form-label">OpenAI Status</label>
+          <div id="openai-status" class="status-badge">Checking...</div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Google Gemini Status</label>
+          <div id="gemini-status" class="status-badge">Checking...</div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="ai-provider">AI Provider Preference</label>
+          <select id="ai-provider" class="form-input">
+            <option value="auto">Auto (Fallback)</option>
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Google Gemini</option>
+          </select>
+          <small style="color: #64748b; font-size: 12px;">Auto will try OpenAI first, then fallback to Gemini if OpenAI fails.</small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="openai-model">OpenAI Model</label>
+          <select id="openai-model" class="form-input">
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="gemini-model">Gemini Model</label>
+          <select id="gemini-model" class="form-input">
+            <option value="gemini-pro">Gemini Pro</option>
+            <option value="gemini-pro-vision">Gemini Pro Vision</option>
+          </select>
+        </div>
+        
+        <div style="margin-top: 24px;">
+          <button class="btn btn-primary" id="save-settings-btn">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 30px;">
+      <h2>API Keys Configuration</h2>
+      <p style="color: #64748b; margin-top: 12px;">
+        API keys must be configured in the backend environment variables:
+      </p>
+      <ul style="margin-top: 12px; padding-left: 20px; color: #64748b;">
+        <li><code>OPENAI_API_KEY</code> - Your OpenAI API key</li>
+        <li><code>GEMINI_API_KEY</code> - Your Google Gemini API key</li>
+      </ul>
+      <p style="color: #64748b; margin-top: 12px;">
+        These are configured on the server side for security. Contact your administrator to set them up.
+      </p>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin-settings.js"></script>
+</body>
+</html>
+
