@@ -147,10 +147,8 @@ exports.generateCourseStructure = async (req, res, next) => {
         apiKeys.api_key || null
       );
 
-      // Save estimated timeline
-      if (structure.estimated_timeline) {
-        course.target_timeline = structure.estimated_timeline;
-      }
+      // Save estimated timeline (default to 36 months if not provided)
+      course.target_timeline = structure.estimated_timeline || '36 months';
 
       // Create modules and topics
       // Sort modules to ensure Beginner → Medium → Expert order
@@ -168,7 +166,15 @@ exports.generateCourseStructure = async (req, res, next) => {
       const expertCount = sortedModules.filter(m => m.difficulty_level?.toLowerCase() === 'expert').length;
       
       if (sortedModules.length !== 30 || beginnerCount !== 10 || mediumCount !== 10 || expertCount !== 10) {
-        console.warn(`Warning: Expected 30 modules (10 beginner, 10 medium, 10 expert), got ${sortedModules.length} (${beginnerCount} beginner, ${mediumCount} medium, ${expertCount} expert)`);
+        throw new Error(`Course structure generation failed: Expected 30 modules (10 beginner, 10 medium, 10 expert), but got ${sortedModules.length} modules (${beginnerCount} beginner, ${mediumCount} medium, ${expertCount} expert). Please try generating again.`);
+      }
+
+      // Verify each module has exactly 5 topics
+      for (let i = 0; i < sortedModules.length; i++) {
+        const moduleData = sortedModules[i];
+        if (!moduleData.topics || moduleData.topics.length !== 5) {
+          throw new Error(`Module "${moduleData.title}" (${moduleData.difficulty_level}) has ${moduleData.topics?.length || 0} topics. Each module must have exactly 5 topics. Please try generating again.`);
+        }
       }
 
       let order = 1;
