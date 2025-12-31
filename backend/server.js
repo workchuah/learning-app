@@ -61,8 +61,19 @@ app.get('/', (_req, res) => {
   });
 });
 
+// Health check endpoint (for keep-alive)
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+// Keep-alive endpoint (lightweight ping)
+app.get('/ping', (_req, res) => {
+  res.json({ status: 'pong', timestamp: new Date().toISOString() });
 });
 
 app.use('/api/auth', authRoutes);
@@ -74,12 +85,47 @@ app.use('/api/admin', adminRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
+// Keep-alive mechanism to prevent server from sleeping
+function setupKeepAlive() {
+  const http = require('http');
+  const https = require('https');
+  const keepAliveInterval = 14 * 60 * 1000; // 14 minutes (before typical 15min timeout)
+  
+  const keepAlive = () => {
+    // Use environment variable for production URL, or localhost for development
+    const keepAliveUrl = process.env.KEEP_ALIVE_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    const pingUrl = `${keepAliveUrl}/ping`;
+    
+    // Use https if URL starts with https, otherwise http
+    const client = pingUrl.startsWith('https') ? https : http;
+    
+    client.get(pingUrl, (res) => {
+      console.log(`✅ Keep-alive ping successful at ${new Date().toISOString()}`);
+    }).on('error', (err) => {
+      // Only log warning if it's not a localhost connection issue
+      if (!err.message.includes('ECONNREFUSED') || !keepAliveUrl.includes('localhost')) {
+        console.warn(`⚠️ Keep-alive ping failed: ${err.message}`);
+      }
+    });
+  };
+  
+  // Start keep-alive after server is ready
+  setTimeout(() => {
+    keepAlive();
+    // Ping every 14 minutes
+    setInterval(keepAlive, keepAliveInterval);
+    console.log(`🔄 Keep-alive mechanism started (pinging every ${keepAliveInterval / 1000 / 60} minutes)`);
+  }, 30000); // Wait 30 seconds after server starts
+}
+
 async function start() {
   try {
     await connectDB();
     await seedDefaultUser();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
+      // Setup keep-alive mechanism
+      setupKeepAlive();
     });
   } catch (error) {
     console.error('Failed to start server:', error);

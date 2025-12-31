@@ -20,4 +20,8 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: KEEP_ALIVE_URL
+        sync: false
+        # Optional: Set to your Render service URL (e.g., https://your-app.onrender.com)
+        # If not set, will use RENDER_EXTERNAL_URL automatically
 

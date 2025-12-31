@@ -1,3 +1,43 @@
+// Keep-alive mechanism (client-side)
+let keepAliveInterval = null;
+
+function startKeepAlive() {
+  // Ping health endpoint every 5 minutes to keep server alive
+  const pingInterval = 5 * 60 * 1000; // 5 minutes
+  
+  const pingServer = async () => {
+    try {
+      const baseUrl = API_BASE_URL.replace('/api', '');
+      await fetch(`${baseUrl}/ping`, { 
+        method: 'GET',
+        cache: 'no-cache'
+      });
+    } catch (error) {
+      // Silently fail - server might be sleeping, that's okay
+      console.debug('Keep-alive ping failed (server may be sleeping):', error.message);
+    }
+  };
+  
+  // Start pinging immediately, then every 5 minutes
+  pingServer();
+  keepAliveInterval = setInterval(pingServer, pingInterval);
+}
+
+function stopKeepAlive() {
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+  }
+}
+
+// Start keep-alive when page loads
+if (typeof window !== 'undefined') {
+  startKeepAlive();
+  
+  // Stop when page unloads
+  window.addEventListener('beforeunload', stopKeepAlive);
+}
+
 // API Functions
 const api = {
   // Helper function to get headers
