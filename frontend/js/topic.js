@@ -243,11 +243,11 @@ async function submitQuiz(form) {
     answers[`saq_${index}`] = formData.get(`saq_${index}`);
   });
   
-  // Calculate score
+  // Calculate score - ONLY based on Multiple Choice Questions (MCQ)
   let correct = 0;
   let total = 0;
   
-  // Check MCQ
+  // Check MCQ only (SAQ are for reference, not graded)
   topic.quiz.mcq_questions?.forEach((q, index) => {
     total++;
     if (answers[`mcq_${index}`] === q.correct_answer) {
@@ -255,17 +255,16 @@ async function submitQuiz(form) {
     }
   });
   
-  // SAQ are not auto-graded, but count as attempted
-  total += topic.quiz.short_answer_questions?.length || 0;
-  
+  // Score is calculated ONLY from MCQ (not SAQ)
   const score = total > 0 ? Math.round((correct / total) * 100) : 0;
   
   try {
+    // Save quiz results (but don't mark as completed yet)
     await api.updateProgress({
       course_id: courseId || topic.course_id,
       topic_id: topicId,
       type: 'topic',
-      completed: false,
+      completed: false, // Will be marked complete when user clicks "Complete this Topic"
       quiz_score: score,
       answers: answers,
     });
@@ -280,10 +279,21 @@ async function submitQuiz(form) {
 function showQuizResults(score, answers) {
   const resultsDiv = document.getElementById('quiz-results');
   resultsDiv.style.display = 'block';
+  
+  const mcqCount = topic.quiz.mcq_questions?.length || 0;
+  const correctCount = topic.quiz.mcq_questions?.reduce((count, q, index) => {
+    return count + (answers[`mcq_${index}`] === q.correct_answer ? 1 : 0);
+  }, 0) || 0;
+  
   resultsDiv.innerHTML = `
     <div style="padding: 20px; background: #f8fafc; border-radius: 6px; margin-bottom: 20px;">
       <h3>Quiz Results</h3>
-      <p style="font-size: 24px; font-weight: bold; color: #3b82f6; margin: 12px 0;">Score: ${score}%</p>
+      <p style="font-size: 24px; font-weight: bold; color: #3b82f6; margin: 12px 0;">
+        Score: ${score}% (${correctCount}/${mcqCount} Multiple Choice Questions)
+      </p>
+      <p style="color: #64748b; font-size: 14px; margin-top: 8px;">
+        <em>Note: Score is calculated based on Multiple Choice Questions only. Short Answer Questions are for your reference to compare with sample answers.</em>
+      </p>
     </div>
   `;
   
@@ -320,30 +330,40 @@ function showQuizResults(score, answers) {
     answersDiv.appendChild(qDiv);
   });
   
-  // SAQ Results
-  topic.quiz.short_answer_questions?.forEach((q, index) => {
-    const userAnswer = answers[`saq_${index}`];
+  // SAQ Results (for reference only, not graded)
+  if (topic.quiz.short_answer_questions && topic.quiz.short_answer_questions.length > 0) {
+    const saqSection = document.createElement('div');
+    saqSection.style.marginTop = '30px';
+    saqSection.innerHTML = '<h3 style="margin-bottom: 16px;">Short Answer Questions (For Your Reference)</h3>';
+    saqSection.innerHTML += '<p style="color: #64748b; font-size: 14px; margin-bottom: 16px;"><em>These questions are not graded. Compare your answers with the sample answers below.</em></p>';
     
-    const qDiv = document.createElement('div');
-    qDiv.style.marginBottom = '20px';
-    qDiv.style.padding = '16px';
-    qDiv.style.border = '1px solid #e2e8f0';
-    qDiv.style.borderRadius = '6px';
+    topic.quiz.short_answer_questions.forEach((q, index) => {
+      const userAnswer = answers[`saq_${index}`];
+      
+      const qDiv = document.createElement('div');
+      qDiv.style.marginBottom = '20px';
+      qDiv.style.padding = '16px';
+      qDiv.style.border = '1px solid #e2e8f0';
+      qDiv.style.borderRadius = '6px';
+      qDiv.style.background = '#f8fafc';
+      
+      qDiv.innerHTML = `
+        <p style="font-weight: 500; margin-bottom: 8px;">${index + 1}. ${q.question}</p>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
+          <strong>Your answer:</strong> ${userAnswer || 'Not answered'}
+        </p>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
+          <strong>Sample answer:</strong> ${q.answer}
+        </p>
+        <p style="color: #1e293b; font-size: 14px; margin: 0;">
+          <strong>Explanation:</strong> ${q.explanation}
+        </p>
+      `;
+      saqSection.appendChild(qDiv);
+    });
     
-    qDiv.innerHTML = `
-      <p style="font-weight: 500; margin-bottom: 8px;">${index + 1}. ${q.question}</p>
-      <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
-        <strong>Your answer:</strong> ${userAnswer || 'Not answered'}
-      </p>
-      <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
-        <strong>Sample answer:</strong> ${q.answer}
-      </p>
-      <p style="color: #1e293b; font-size: 14px; margin: 0;">
-        <strong>Explanation:</strong> ${q.explanation}
-      </p>
-    `;
-    answersDiv.appendChild(qDiv);
-  });
+    answersDiv.appendChild(saqSection);
+  }
   
   resultsDiv.appendChild(answersDiv);
   
@@ -354,6 +374,31 @@ function showQuizResults(score, answers) {
       el.disabled = true;
     });
   }
+  
+  // Add "Complete this Topic" button
+  const completeButtonDiv = document.createElement('div');
+  completeButtonDiv.style.marginTop = '30px';
+  completeButtonDiv.style.padding = '20px';
+  completeButtonDiv.style.background = '#f0fdf4';
+  completeButtonDiv.style.border = '2px solid #10b981';
+  completeButtonDiv.style.borderRadius = '8px';
+  completeButtonDiv.style.textAlign = 'center';
+  
+  const completeButton = document.createElement('button');
+  completeButton.className = 'btn btn-primary';
+  completeButton.textContent = '✅ Complete this Topic';
+  completeButton.style.fontSize = '16px';
+  completeButton.style.padding = '12px 32px';
+  completeButton.addEventListener('click', async () => {
+    await completeTopic(score, answers);
+  });
+  
+  completeButtonDiv.innerHTML = `
+    <p style="margin-bottom: 16px; color: #1e293b; font-weight: 500;">Ready to mark this topic as complete?</p>
+  `;
+  completeButtonDiv.appendChild(completeButton);
+  
+  resultsDiv.appendChild(completeButtonDiv);
 }
 
 // Generate content
@@ -419,6 +464,58 @@ function simpleMarkdownToHtml(markdown) {
   }
   
   return html;
+}
+
+// Complete topic function
+async function completeTopic(quizScore, answers) {
+  const btn = document.querySelector('#quiz-results button');
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Completing...';
+  }
+  
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  
+  try {
+    // Mark topic as completed and save all answers/results
+    await api.updateProgress({
+      course_id: courseId || topic.course_id,
+      topic_id: topicId,
+      type: 'topic',
+      completed: true, // Mark as completed
+      quiz_score: quizScore,
+      answers: answers,
+    });
+    
+    successDiv.textContent = 'Topic completed successfully! Progress updated.';
+    successDiv.classList.remove('hidden');
+    
+    // Update UI to show completion
+    if (btn) {
+      btn.textContent = '✅ Topic Completed';
+      btn.style.background = '#10b981';
+      btn.disabled = true;
+    }
+    
+    // Reload course to update progress bar
+    if (courseId) {
+      // Small delay to ensure backend has updated
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+  } catch (error) {
+    errorDiv.textContent = 'Failed to complete topic: ' + error.message;
+    errorDiv.classList.remove('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '✅ Complete this Topic';
+    }
+  }
 }
 
 // Load topic on page load
