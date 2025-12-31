@@ -1,6 +1,6 @@
 const aiService = require('./aiService');
 
-async function generateCourseStructure(courseTitle, courseGoal, targetTimeline, outlineText = '', provider = 'auto', model = null, openaiKey = null, geminiKey = null) {
+async function generateCourseStructure(courseTitle, courseGoal, targetTimeline, outlineText = '', provider = 'openai', model = null, apiKey = null) {
   const prompt = `You are an expert course designer. Create a structured course breakdown.
 
 Course Title: ${courseTitle}
@@ -26,6 +26,8 @@ Format your response as valid JSON only, no markdown, no code blocks:
 
 Make it comprehensive and well-structured for the given timeline.`;
 
+  const openaiKey = provider === 'openai' ? apiKey : null;
+  const geminiKey = provider === 'gemini' ? apiKey : null;
   const response = await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
   
   // Extract JSON from response (handle markdown code blocks if present)

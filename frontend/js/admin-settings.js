@@ -1,63 +1,60 @@
 // Admin settings functionality
 requireAuth();
 
-// Store API keys temporarily in memory (never in localStorage for security)
-let tempApiKeys = {
-  course_structure_agent: { openai_key: '', gemini_key: '' },
-  content_generation_agent: { openai_key: '', gemini_key: '' }
-};
-
 async function loadSettings() {
   const errorDiv = document.getElementById('error-message');
   
   try {
     const settings = await api.getSettings();
     
-    // Update global status badges
-    document.getElementById('openai-status').textContent = settings.openai_configured ? '✓ Configured' : '✗ Not Configured';
-    document.getElementById('openai-status').className = `status-badge ${settings.openai_configured ? 'status-success' : 'status-error'}`;
-    
-    document.getElementById('gemini-status').textContent = settings.gemini_configured ? '✓ Configured' : '✗ Not Configured';
-    document.getElementById('gemini-status').className = `status-badge ${settings.gemini_configured ? 'status-success' : 'status-error'}`;
-    
-    // Update form values
-    document.getElementById('ai-provider').value = settings.ai_provider_preference || 'auto';
+    // Update model preferences
     document.getElementById('openai-model').value = settings.openai_model || 'gpt-4';
     document.getElementById('gemini-model').value = settings.gemini_model || 'gemini-pro';
     
-    // Update API key status badges (never show actual keys)
+    // Update API key status and provider for each agent
     if (settings.api_keys) {
       // Course Structure Agent
-      const csStatus = settings.api_keys.course_structure_agent || {};
-      document.getElementById('cs-openai-status').textContent = csStatus.openai_configured ? '✓ Configured' : '✗ Not Configured';
-      document.getElementById('cs-openai-status').className = `status-badge ${csStatus.openai_configured ? 'status-success' : 'status-error'}`;
-      
-      document.getElementById('cs-gemini-status').textContent = csStatus.gemini_configured ? '✓ Configured' : '✗ Not Configured';
-      document.getElementById('cs-gemini-status').className = `status-badge ${csStatus.gemini_configured ? 'status-success' : 'status-error'}`;
-      
+      updateAgentUI('cs', settings.api_keys.course_structure_agent);
       // Content Generation Agent
-      const cgStatus = settings.api_keys.content_generation_agent || {};
-      document.getElementById('cg-openai-status').textContent = cgStatus.openai_configured ? '✓ Configured' : '✗ Not Configured';
-      document.getElementById('cg-openai-status').className = `status-badge ${cgStatus.openai_configured ? 'status-success' : 'status-error'}`;
-      
-      document.getElementById('cg-gemini-status').textContent = cgStatus.gemini_configured ? '✓ Configured' : '✗ Not Configured';
-      document.getElementById('cg-gemini-status').className = `status-badge ${cgStatus.gemini_configured ? 'status-success' : 'status-error'}`;
+      updateAgentUI('cg', settings.api_keys.content_generation_agent);
+      // Tutorial Exercise Agent
+      updateAgentUI('te', settings.api_keys.tutorial_exercise_agent);
+      // Practical Task Agent
+      updateAgentUI('pt', settings.api_keys.practical_task_agent);
+      // Quiz Agent
+      updateAgentUI('qz', settings.api_keys.quiz_agent);
     }
     
-    // Clear input fields (never show existing keys for security)
-    document.getElementById('cs-openai-key').value = '';
-    document.getElementById('cs-gemini-key').value = '';
-    document.getElementById('cg-openai-key').value = '';
-    document.getElementById('cg-gemini-key').value = '';
+    // Clear all input fields (never show existing keys for security)
+    ['cs', 'cg', 'te', 'pt', 'qz'].forEach(prefix => {
+      document.getElementById(`${prefix}-api-key`).value = '';
+    });
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.classList.remove('hidden');
   }
 }
 
-// Save settings
-document.getElementById('save-settings-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('save-settings-btn');
+function updateAgentUI(prefix, agentData) {
+  if (!agentData) return;
+  
+  // Update provider dropdown
+  const providerSelect = document.getElementById(`${prefix}-provider`);
+  if (providerSelect && agentData.provider) {
+    providerSelect.value = agentData.provider;
+  }
+  
+  // Update status badge
+  const statusBadge = document.getElementById(`${prefix}-status`);
+  if (statusBadge) {
+    statusBadge.textContent = agentData.configured ? '✓ Configured' : '✗ Not Configured';
+    statusBadge.className = `status-badge ${agentData.configured ? 'status-success' : 'status-error'}`;
+  }
+}
+
+// Save model settings
+document.getElementById('save-models-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('save-models-btn');
   const errorDiv = document.getElementById('error-message');
   const successDiv = document.getElementById('success-message');
   
@@ -68,23 +65,19 @@ document.getElementById('save-settings-btn').addEventListener('click', async () 
   
   try {
     const settings = {
-      ai_provider_preference: document.getElementById('ai-provider').value,
       openai_model: document.getElementById('openai-model').value,
       gemini_model: document.getElementById('gemini-model').value,
     };
     
     await api.updateSettings(settings);
-    successDiv.textContent = 'Settings saved successfully!';
+    successDiv.textContent = 'Model settings saved successfully!';
     successDiv.classList.remove('hidden');
-    
-    // Reload settings to get updated status
-    loadSettings();
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.classList.remove('hidden');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Save Settings';
+    btn.textContent = 'Save Model Settings';
   }
 });
 
@@ -100,15 +93,27 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
   successDiv.classList.add('hidden');
   
   try {
-    // Get API keys from input fields
+    // Get API keys from input fields for each agent
     const apiKeys = {
       course_structure_agent: {
-        openai_key: document.getElementById('cs-openai-key').value.trim(),
-        gemini_key: document.getElementById('cs-gemini-key').value.trim(),
+        provider: document.getElementById('cs-provider').value,
+        api_key: document.getElementById('cs-api-key').value.trim(),
       },
       content_generation_agent: {
-        openai_key: document.getElementById('cg-openai-key').value.trim(),
-        gemini_key: document.getElementById('cg-gemini-key').value.trim(),
+        provider: document.getElementById('cg-provider').value,
+        api_key: document.getElementById('cg-api-key').value.trim(),
+      },
+      tutorial_exercise_agent: {
+        provider: document.getElementById('te-provider').value,
+        api_key: document.getElementById('te-api-key').value.trim(),
+      },
+      practical_task_agent: {
+        provider: document.getElementById('pt-provider').value,
+        api_key: document.getElementById('pt-api-key').value.trim(),
+      },
+      quiz_agent: {
+        provider: document.getElementById('qz-provider').value,
+        api_key: document.getElementById('qz-api-key').value.trim(),
       },
     };
     
@@ -122,10 +127,9 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     successDiv.classList.remove('hidden');
     
     // Clear input fields after saving
-    document.getElementById('cs-openai-key').value = '';
-    document.getElementById('cs-gemini-key').value = '';
-    document.getElementById('cg-openai-key').value = '';
-    document.getElementById('cg-gemini-key').value = '';
+    ['cs', 'cg', 'te', 'pt', 'qz'].forEach(prefix => {
+      document.getElementById(`${prefix}-api-key`).value = '';
+    });
     
     // Reload settings to update status badges
     loadSettings();
@@ -134,7 +138,7 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     errorDiv.classList.remove('hidden');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Save API Keys';
+    btn.textContent = 'Save All API Keys';
   }
 });
 
@@ -146,4 +150,3 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 
 // Load settings on page load
 loadSettings();
-

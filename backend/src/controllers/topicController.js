@@ -50,17 +50,39 @@ exports.generateTopicContent = async (req, res, next) => {
 
     try {
       const user = await require('../models/User').findById(req.user._id);
-      const provider = user.ai_provider_preference || 'auto';
-      const model = provider === 'openai' ? user.openai_model : user.gemini_model;
       const courseContext = `${course.title}: ${course.goal}`;
-      const apiKeys = user.api_keys?.content_generation_agent || {};
-
-      // Generate all content
-      const [lectureNotes, exercises, tasks, quiz] = await Promise.all([
-        generateLectureNotes(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
-        generateTutorialExercises(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
-        generatePracticalTasks(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
-        generateQuiz(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
+      
+      // Get API keys for each agent
+      const contentGenKeys = user.api_keys?.content_generation_agent || {};
+      const tutorialKeys = user.api_keys?.tutorial_exercise_agent || {};
+      const practicalKeys = user.api_keys?.practical_task_agent || {};
+      const quizKeys = user.api_keys?.quiz_agent || {};
+      
+      // Generate lecture notes first (needed for other agents)
+      const contentGenProvider = contentGenKeys.provider || 'openai';
+      const contentGenModel = contentGenProvider === 'openai' ? user.openai_model : user.gemini_model;
+      const lectureNotes = await generateLectureNotes(
+        topic.title, 
+        courseContext, 
+        contentGenProvider, 
+        contentGenModel, 
+        contentGenKeys.api_key || null
+      );
+      
+      // Generate other content in parallel (using lecture notes as context)
+      const tutorialProvider = tutorialKeys.provider || 'openai';
+      const tutorialModel = tutorialProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const practicalProvider = practicalKeys.provider || 'openai';
+      const practicalModel = practicalProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const quizProvider = quizKeys.provider || 'openai';
+      const quizModel = quizProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const [exercises, tasks, quiz] = await Promise.all([
+        generateTutorialExercises(topic.title, courseContext, lectureNotes, tutorialProvider, tutorialModel, tutorialKeys.api_key || null),
+        generatePracticalTasks(topic.title, courseContext, lectureNotes, practicalProvider, practicalModel, practicalKeys.api_key || null),
+        generateQuiz(topic.title, courseContext, lectureNotes, quizProvider, quizModel, quizKeys.api_key || null),
       ]);
 
       topic.lecture_notes = lectureNotes;
