@@ -72,12 +72,18 @@ exports.updateSettings = async (req, res, next) => {
           if (!user.api_keys[agentName]) {
             user.api_keys[agentName] = {};
           }
+          // Update provider if provided
           if (api_keys[agentName].provider !== undefined) {
             user.api_keys[agentName].provider = api_keys[agentName].provider;
           }
-          if (api_keys[agentName].api_key !== undefined) {
-            user.api_keys[agentName].api_key = api_keys[agentName].api_key || '';
+          // Only update api_key if it's provided in the request
+          // If api_key is not in the request, keep existing value (don't overwrite)
+          if (api_keys[agentName].hasOwnProperty('api_key')) {
+            // api_key is explicitly provided (could be empty string to clear, or a new value)
+            user.api_keys[agentName].api_key = api_keys[agentName].api_key;
           }
+          // If api_key is not in the request object, it means user didn't provide it
+          // So we keep the existing api_key value unchanged
         }
       });
     }

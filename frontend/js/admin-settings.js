@@ -11,6 +11,16 @@ async function loadSettings() {
     document.getElementById('openai-model').value = settings.openai_model || 'gpt-4';
     document.getElementById('gemini-model').value = settings.gemini_model || 'gemini-pro';
     
+    // Initialize originalProviders and configured status
+    originalProviders = {};
+    agentConfiguredStatus = {};
+    
+    // Initialize defaults for all agents
+    ['cs', 'cg', 'te', 'pt', 'qz'].forEach(prefix => {
+      originalProviders[prefix] = 'openai';
+      agentConfiguredStatus[prefix] = false;
+    });
+    
     // Update API key status and provider for each agent
     if (settings.api_keys) {
       // Course Structure Agent
@@ -35,14 +45,30 @@ async function loadSettings() {
   }
 }
 
+// Store original provider values and configured status to detect changes
+let originalProviders = {};
+let agentConfiguredStatus = {};
+
 function updateAgentUI(prefix, agentData) {
-  if (!agentData) return;
+  if (!agentData) {
+    // Agent not configured yet
+    agentConfiguredStatus[prefix] = false;
+    originalProviders[prefix] = 'openai'; // default
+    return;
+  }
   
   // Update provider dropdown
   const providerSelect = document.getElementById(`${prefix}-provider`);
   if (providerSelect && agentData.provider) {
     providerSelect.value = agentData.provider;
+    // Store original value
+    originalProviders[prefix] = agentData.provider;
+  } else {
+    originalProviders[prefix] = 'openai'; // default
   }
+  
+  // Store configured status
+  agentConfiguredStatus[prefix] = agentData.configured || false;
   
   // Update status badge
   const statusBadge = document.getElementById(`${prefix}-status`);
@@ -93,42 +119,74 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
   successDiv.classList.add('hidden');
   
   try {
-    // Get API keys from input fields for each agent
-    const apiKeys = {
-      course_structure_agent: {
-        provider: document.getElementById('cs-provider').value,
-        api_key: document.getElementById('cs-api-key').value.trim(),
-      },
-      content_generation_agent: {
-        provider: document.getElementById('cg-provider').value,
-        api_key: document.getElementById('cg-api-key').value.trim(),
-      },
-      tutorial_exercise_agent: {
-        provider: document.getElementById('te-provider').value,
-        api_key: document.getElementById('te-api-key').value.trim(),
-      },
-      practical_task_agent: {
-        provider: document.getElementById('pt-provider').value,
-        api_key: document.getElementById('pt-api-key').value.trim(),
-      },
-      quiz_agent: {
-        provider: document.getElementById('qz-provider').value,
-        api_key: document.getElementById('qz-api-key').value.trim(),
-      },
+    // Get API keys from input fields - only include agents that have values
+    const apiKeys = {};
+    
+    // Helper function to add agent if it has a value or provider changed
+    const addAgentIfHasValue = (agentName, prefix) => {
+      const apiKeyValue = document.getElementById(`${prefix}-api-key`).value.trim();
+      const providerValue = document.getElementById(`${prefix}-provider`).value;
+      const originalProvider = originalProviders[prefix] || 'openai';
+      const isConfigured = agentConfiguredStatus[prefix] || false;
+      
+      // Include if:
+      // 1. api_key has a value (user is setting/updating it), OR
+      // 2. agent is already configured AND provider changed (update provider only)
+      const providerChanged = providerValue !== originalProvider;
+      
+      if (apiKeyValue) {
+        // User is providing/updating API key
+        apiKeys[agentName] = {
+          provider: providerValue,
+          api_key: apiKeyValue,
+        };
+      } else if (isConfigured && providerChanged) {
+        // Agent is configured, provider changed, but no new API key
+        // Only update provider, keep existing API key
+        apiKeys[agentName] = {
+          provider: providerValue,
+          // Don't include api_key - backend will keep existing value
+        };
+      }
+      // If api_key is empty and provider didn't change, don't include (preserve everything)
     };
     
-    // Update settings with API keys
+    // Only add agents that have API key values
+    addAgentIfHasValue('course_structure_agent', 'cs');
+    addAgentIfHasValue('content_generation_agent', 'cg');
+    addAgentIfHasValue('tutorial_exercise_agent', 'te');
+    addAgentIfHasValue('practical_task_agent', 'pt');
+    addAgentIfHasValue('quiz_agent', 'qz');
+    
+    // Only send if there are keys to update
+    if (Object.keys(apiKeys).length === 0) {
+      errorDiv.textContent = 'Please enter at least one API key to save.';
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+    
+    // Update settings with API keys (only the ones with values)
     const settings = {
       api_keys: apiKeys,
     };
     
     await api.updateSettings(settings);
-    successDiv.textContent = 'API keys saved successfully!';
+    successDiv.textContent = `API keys saved successfully! (${Object.keys(apiKeys).length} agent(s) updated)`;
     successDiv.classList.remove('hidden');
     
-    // Clear input fields after saving
-    ['cs', 'cg', 'te', 'pt', 'qz'].forEach(prefix => {
-      document.getElementById(`${prefix}-api-key`).value = '';
+    // Clear only the input fields that were saved
+    Object.keys(apiKeys).forEach(agentName => {
+      const prefixMap = {
+        'course_structure_agent': 'cs',
+        'content_generation_agent': 'cg',
+        'tutorial_exercise_agent': 'te',
+        'practical_task_agent': 'pt',
+        'quiz_agent': 'qz'
+      };
+      const prefix = prefixMap[agentName];
+      if (prefix) {
+        document.getElementById(`${prefix}-api-key`).value = '';
+      }
     });
     
     // Reload settings to update status badges
