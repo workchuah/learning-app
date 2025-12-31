@@ -32,7 +32,7 @@ async function loadCourse() {
     // Update UI
     document.getElementById('course-title').textContent = course.title;
     document.getElementById('course-goal').textContent = course.goal;
-    document.getElementById('course-timeline').textContent = course.target_timeline;
+    document.getElementById('course-timeline').textContent = course.target_timeline || 'To be estimated after structure generation';
     
     const progress = course.progress_percentage || 0;
     document.getElementById('progress-fill').style.width = `${progress}%`;

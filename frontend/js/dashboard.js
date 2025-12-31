@@ -28,7 +28,7 @@ async function loadCourses() {
         <h3>${course.title}</h3>
         <p style="color: #64748b; margin-top: 8px;">${course.goal}</p>
         <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 14px; color: #64748b;">Timeline: ${course.target_timeline}</span>
+          <span style="font-size: 14px; color: #64748b;">${course.target_timeline ? `Estimated Timeline: ${course.target_timeline}` : 'Timeline: To be estimated'}</span>
           <span style="font-size: 14px; color: #64748b;">Progress: ${course.progress_percentage || 0}%</span>
         </div>
         <div style="margin-top: 16px;">
@@ -80,7 +80,7 @@ document.getElementById('create-course-form').addEventListener('submit', async (
   const formData = new FormData();
   formData.append('title', document.getElementById('course-title').value);
   formData.append('goal', document.getElementById('course-goal').value);
-  formData.append('target_timeline', document.getElementById('course-timeline').value);
+  // Timeline will be auto-estimated by AI during course structure generation
   
   const outlineFile = document.getElementById('course-outline').files[0];
   if (outlineFile) {

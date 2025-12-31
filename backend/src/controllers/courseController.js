@@ -54,7 +54,7 @@ exports.createCourse = async (req, res, next) => {
       }
 
       try {
-        const { title, goal, target_timeline } = req.body;
+        const { title, goal } = req.body;
         let outlineText = '';
 
         if (req.file) {
@@ -64,7 +64,7 @@ exports.createCourse = async (req, res, next) => {
         const course = await Course.create({
           title,
           goal,
-          target_timeline,
+          target_timeline: '', // Will be estimated during structure generation
           outline_file: req.file ? req.file.filename : '',
           outline_text: outlineText,
           created_by: req.user._id,
@@ -141,12 +141,16 @@ exports.generateCourseStructure = async (req, res, next) => {
       const structure = await generateCourseStructure(
         course.title,
         course.goal,
-        course.target_timeline,
         course.outline_text,
         provider,
         model,
         apiKeys.api_key || null
       );
+
+      // Save estimated timeline
+      if (structure.estimated_timeline) {
+        course.target_timeline = structure.estimated_timeline;
+      }
 
       // Create modules and topics
       // Sort modules to ensure Beginner → Medium → Expert order
@@ -157,6 +161,15 @@ exports.generateCourseStructure = async (req, res, next) => {
         if (levelA !== levelB) return levelA - levelB;
         return 0;
       });
+
+      // Verify we have exactly 30 modules (10 per level)
+      const beginnerCount = sortedModules.filter(m => m.difficulty_level?.toLowerCase() === 'beginner').length;
+      const mediumCount = sortedModules.filter(m => m.difficulty_level?.toLowerCase() === 'medium').length;
+      const expertCount = sortedModules.filter(m => m.difficulty_level?.toLowerCase() === 'expert').length;
+      
+      if (sortedModules.length !== 30 || beginnerCount !== 10 || mediumCount !== 10 || expertCount !== 10) {
+        console.warn(`Warning: Expected 30 modules (10 beginner, 10 medium, 10 expert), got ${sortedModules.length} (${beginnerCount} beginner, ${mediumCount} medium, ${expertCount} expert)`);
+      }
 
       let order = 1;
       for (const moduleData of sortedModules) {
