@@ -5,12 +5,13 @@ exports.getSettings = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
     
-    // Get API keys for each agent (never return actual keys)
-    const getAgentStatus = (agentName) => {
+    // Get API keys for each agent (return keys since user owns them)
+    const getAgentData = (agentName) => {
       const keys = user.api_keys?.[agentName] || {};
       return {
         provider: keys.provider || 'openai',
         configured: !!keys.api_key,
+        api_key: keys.api_key || '', // Return the actual key so user can view it
       };
     };
     
@@ -21,13 +22,13 @@ exports.getSettings = async (req, res, next) => {
       // User preferences
       openai_model: user.openai_model || 'gpt-4',
       gemini_model: user.gemini_model || 'gemini-pro',
-      // API keys status (only show if configured, never show actual keys)
+      // API keys (return actual keys so user can view their own keys)
       api_keys: {
-        course_structure_agent: getAgentStatus('course_structure_agent'),
-        content_generation_agent: getAgentStatus('content_generation_agent'),
-        tutorial_exercise_agent: getAgentStatus('tutorial_exercise_agent'),
-        practical_task_agent: getAgentStatus('practical_task_agent'),
-        quiz_agent: getAgentStatus('quiz_agent'),
+        course_structure_agent: getAgentData('course_structure_agent'),
+        content_generation_agent: getAgentData('content_generation_agent'),
+        tutorial_exercise_agent: getAgentData('tutorial_exercise_agent'),
+        practical_task_agent: getAgentData('practical_task_agent'),
+        quiz_agent: getAgentData('quiz_agent'),
       },
     });
   } catch (error) {
@@ -90,12 +91,13 @@ exports.updateSettings = async (req, res, next) => {
     
     await user.save();
     
-    // Return updated settings (without showing actual keys)
-    const getAgentStatus = (agentName) => {
+    // Return updated settings (return actual keys so user can view their own keys)
+    const getAgentData = (agentName) => {
       const keys = user.api_keys?.[agentName] || {};
       return {
         provider: keys.provider || 'openai',
         configured: !!keys.api_key,
+        api_key: keys.api_key || '', // Return the actual key
       };
     };
     
@@ -105,11 +107,11 @@ exports.updateSettings = async (req, res, next) => {
       openai_model: user.openai_model,
       gemini_model: user.gemini_model,
       api_keys: {
-        course_structure_agent: getAgentStatus('course_structure_agent'),
-        content_generation_agent: getAgentStatus('content_generation_agent'),
-        tutorial_exercise_agent: getAgentStatus('tutorial_exercise_agent'),
-        practical_task_agent: getAgentStatus('practical_task_agent'),
-        quiz_agent: getAgentStatus('quiz_agent'),
+        course_structure_agent: getAgentData('course_structure_agent'),
+        content_generation_agent: getAgentData('content_generation_agent'),
+        tutorial_exercise_agent: getAgentData('tutorial_exercise_agent'),
+        practical_task_agent: getAgentData('practical_task_agent'),
+        quiz_agent: getAgentData('quiz_agent'),
       },
     });
   } catch (error) {

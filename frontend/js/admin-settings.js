@@ -35,10 +35,8 @@ async function loadSettings() {
       updateAgentUI('qz', settings.api_keys.quiz_agent);
     }
     
-    // Clear all input fields (never show existing keys for security)
-    ['cs', 'cg', 'te', 'pt', 'qz'].forEach(prefix => {
-      document.getElementById(`${prefix}-api-key`).value = '';
-    });
+    // Keys are now loaded into input fields (masked as password type)
+    // Users can toggle visibility with the eye icon
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.classList.remove('hidden');
@@ -69,6 +67,15 @@ function updateAgentUI(prefix, agentData) {
   
   // Store configured status
   agentConfiguredStatus[prefix] = agentData.configured || false;
+  
+  // Update API key field with saved value (masked by default)
+  const apiKeyInput = document.getElementById(`${prefix}-api-key`);
+  if (apiKeyInput && agentData.api_key) {
+    // Store the actual key value (for editing)
+    apiKeyInput.value = agentData.api_key;
+    // Keep it as password type (masked) by default
+    apiKeyInput.type = 'password';
+  }
   
   // Update status badge
   const statusBadge = document.getElementById(`${prefix}-status`);
@@ -204,6 +211,25 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await api.logout();
   window.location.href = 'login.html';
+});
+
+// Toggle API key visibility
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('toggle-key-btn') || e.target.closest('.toggle-key-btn')) {
+    const btn = e.target.classList.contains('toggle-key-btn') ? e.target : e.target.closest('.toggle-key-btn');
+    const targetId = btn.getAttribute('data-target');
+    const input = document.getElementById(targetId);
+    
+    if (input) {
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+  }
 });
 
 // Load settings on page load
