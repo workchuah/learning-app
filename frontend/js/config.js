@@ -1,4 +1,6 @@
 // API Configuration
+// For production, update this to your Render backend URL
+// Example: 'https://your-app-name.onrender.com/api'
 const API_BASE_URL = window.__LEARNING_APP_API_BASE__ || 'http://localhost:5000/api';
 
 // Export to window for global access
