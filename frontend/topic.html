@@ -40,8 +40,25 @@
 
       <!-- Lecture Notes -->
       <section id="lecture-notes-section" class="card" style="display: none; margin-bottom: 30px;">
-        <h2>📖 Lecture Notes</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 style="margin: 0;">📖 Lecture Notes</h2>
+          <div style="display: flex; gap: 12px;">
+            <button class="btn btn-secondary" id="toggle-highlight-btn" style="display: none;">Show Highlighted Version</button>
+            <button class="btn btn-secondary" id="toggle-original-btn" style="display: none;">Show Original</button>
+          </div>
+        </div>
         <div id="lecture-notes-content" class="markdown-content"></div>
+        <div id="highlighted-lecture-notes-content" class="markdown-content" style="display: none;"></div>
+      </section>
+
+      <!-- Audiobook -->
+      <section id="audiobook-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>🎧 Audiobook</h2>
+        <div id="audiobook-content">
+          <audio id="audiobook-player" controls style="width: 100%; margin-top: 16px;">
+            Your browser does not support the audio element.
+          </audio>
+        </div>
       </section>
 
       <!-- Tutorial Exercises -->

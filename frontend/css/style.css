@@ -308,6 +308,14 @@ textarea.form-input {
   line-height: 1.8;
 }
 
+/* Highlighted keywords */
+.markdown-content mark {
+  background-color: #fef08a;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
 .markdown-content h1,
 .markdown-content h2,
 .markdown-content h3 {

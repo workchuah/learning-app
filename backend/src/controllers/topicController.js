@@ -6,6 +6,8 @@ const {
   generateTutorialExercises,
   generatePracticalTasks,
   generateQuiz,
+  highlightKeywords,
+  generateAudiobook,
 } = require('../services/contentGenerationAgent');
 
 exports.getTopic = async (req, res, next) => {
@@ -57,6 +59,8 @@ exports.generateTopicContent = async (req, res, next) => {
       const tutorialKeys = user.api_keys?.tutorial_exercise_agent || {};
       const practicalKeys = user.api_keys?.practical_task_agent || {};
       const quizKeys = user.api_keys?.quiz_agent || {};
+      const keywordKeys = user.api_keys?.keyword_highlighting_agent || {};
+      const audiobookKeys = user.api_keys?.audiobook_agent || {};
       
       // Generate lecture notes first (needed for other agents)
       const contentGenProvider = contentGenKeys.provider || 'openai';
@@ -68,6 +72,24 @@ exports.generateTopicContent = async (req, res, next) => {
         contentGenModel, 
         contentGenKeys.api_key || null
       );
+      
+      // Generate keyword highlighting and audiobook (based on lecture notes)
+      const keywordProvider = keywordKeys.provider || 'openai';
+      const keywordModel = keywordProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const audiobookProvider = audiobookKeys.provider || 'openai';
+      
+      // Generate keyword highlighting and audiobook in parallel
+      const [highlightedNotes, audiobookUrl] = await Promise.all([
+        highlightKeywords(lectureNotes, keywordProvider, keywordModel, keywordKeys.api_key || null).catch(err => {
+          console.error('Keyword highlighting failed:', err);
+          return lectureNotes; // Fallback to original notes
+        }),
+        generateAudiobook(lectureNotes, audiobookProvider, audiobookKeys.api_key || null).catch(err => {
+          console.error('Audiobook generation failed:', err);
+          return ''; // Return empty if fails
+        }),
+      ]);
       
       // Generate other content in parallel (using lecture notes as context)
       const tutorialProvider = tutorialKeys.provider || 'openai';
@@ -86,6 +108,8 @@ exports.generateTopicContent = async (req, res, next) => {
       ]);
 
       topic.lecture_notes = lectureNotes;
+      topic.highlighted_lecture_notes = highlightedNotes;
+      topic.audiobook_url = audiobookUrl;
       topic.tutorial_exercises = exercises;
       topic.practical_tasks = tasks;
       topic.quiz = quiz;

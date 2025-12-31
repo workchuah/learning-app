@@ -7,6 +7,8 @@ const TopicSchema = new mongoose.Schema(
     title: { type: String, required: true },
     order: { type: Number, required: true },
     lecture_notes: { type: String, default: '' },
+    highlighted_lecture_notes: { type: String, default: '' }, // Lecture notes with highlighted keywords
+    audiobook_url: { type: String, default: '' }, // URL to generated audiobook file
     tutorial_exercises: [{
       question: String,
       answer: String,

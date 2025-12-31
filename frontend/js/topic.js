@@ -56,6 +56,26 @@ function renderTopicContent() {
   if (topic.lecture_notes) {
     document.getElementById('lecture-notes-section').style.display = 'block';
     document.getElementById('lecture-notes-content').innerHTML = simpleMarkdownToHtml(topic.lecture_notes);
+    
+    // Show highlighted version if available
+    if (topic.highlighted_lecture_notes) {
+      document.getElementById('highlighted-lecture-notes-content').innerHTML = simpleMarkdownToHtml(topic.highlighted_lecture_notes);
+      document.getElementById('toggle-highlight-btn').style.display = 'inline-block';
+    }
+  }
+  
+  // Audiobook
+  if (topic.audiobook_url) {
+    document.getElementById('audiobook-section').style.display = 'block';
+    const audioPlayer = document.getElementById('audiobook-player');
+    // Construct full URL (assuming backend serves from /uploads)
+    let audioUrl = topic.audiobook_url;
+    if (!audioUrl.startsWith('http')) {
+      // If relative path, construct full URL from API base
+      const baseUrl = window.API_BASE_URL ? window.API_BASE_URL.replace('/api', '') : API_BASE_URL.replace('/api', '');
+      audioUrl = `${baseUrl}${topic.audiobook_url}`;
+    }
+    audioPlayer.src = audioUrl;
   }
   
   // Tutorial Exercises
@@ -396,6 +416,9 @@ function simpleMarkdownToHtml(markdown) {
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
   
+  // Preserve <mark> tags (for highlighted keywords) - do this before wrapping
+  // The mark tags should already be in the HTML from the AI response
+  
   // Wrap in paragraph if not already wrapped
   if (!html.startsWith('<')) {
     html = '<p>' + html + '</p>';
@@ -403,6 +426,21 @@ function simpleMarkdownToHtml(markdown) {
   
   return html;
 }
+
+// Toggle between original and highlighted lecture notes
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'toggle-highlight-btn') {
+    document.getElementById('lecture-notes-content').style.display = 'none';
+    document.getElementById('highlighted-lecture-notes-content').style.display = 'block';
+    document.getElementById('toggle-highlight-btn').style.display = 'none';
+    document.getElementById('toggle-original-btn').style.display = 'inline-block';
+  } else if (e.target.id === 'toggle-original-btn') {
+    document.getElementById('lecture-notes-content').style.display = 'block';
+    document.getElementById('highlighted-lecture-notes-content').style.display = 'none';
+    document.getElementById('toggle-highlight-btn').style.display = 'inline-block';
+    document.getElementById('toggle-original-btn').style.display = 'none';
+  }
+});
 
 // Load topic on page load
 loadTopic();

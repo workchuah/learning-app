@@ -29,6 +29,8 @@ exports.getSettings = async (req, res, next) => {
         tutorial_exercise_agent: getAgentData('tutorial_exercise_agent'),
         practical_task_agent: getAgentData('practical_task_agent'),
         quiz_agent: getAgentData('quiz_agent'),
+        keyword_highlighting_agent: getAgentData('keyword_highlighting_agent'),
+        audiobook_agent: getAgentData('audiobook_agent'),
       },
     });
   } catch (error) {
@@ -65,7 +67,9 @@ exports.updateSettings = async (req, res, next) => {
         'content_generation_agent',
         'tutorial_exercise_agent',
         'practical_task_agent',
-        'quiz_agent'
+        'quiz_agent',
+        'keyword_highlighting_agent',
+        'audiobook_agent'
       ];
       
       agentNames.forEach(agentName => {

@@ -16,7 +16,7 @@ async function loadSettings() {
     agentConfiguredStatus = {};
     
     // Initialize defaults for all agents
-    ['cs', 'cg', 'te', 'pt', 'qz'].forEach(prefix => {
+    ['cs', 'cg', 'te', 'pt', 'qz', 'kh', 'ab'].forEach(prefix => {
       originalProviders[prefix] = 'openai';
       agentConfiguredStatus[prefix] = false;
     });
@@ -33,6 +33,10 @@ async function loadSettings() {
       updateAgentUI('pt', settings.api_keys.practical_task_agent);
       // Quiz Agent
       updateAgentUI('qz', settings.api_keys.quiz_agent);
+      // Keyword Highlighting Agent
+      updateAgentUI('kh', settings.api_keys.keyword_highlighting_agent);
+      // Audiobook Agent
+      updateAgentUI('ab', settings.api_keys.audiobook_agent);
     }
     
     // Keys are now loaded into input fields (masked as password type)
@@ -164,6 +168,8 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     addAgentIfHasValue('tutorial_exercise_agent', 'te');
     addAgentIfHasValue('practical_task_agent', 'pt');
     addAgentIfHasValue('quiz_agent', 'qz');
+    addAgentIfHasValue('keyword_highlighting_agent', 'kh');
+    addAgentIfHasValue('audiobook_agent', 'ab');
     
     // Only send if there are keys to update
     if (Object.keys(apiKeys).length === 0) {
@@ -188,7 +194,9 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
         'content_generation_agent': 'cg',
         'tutorial_exercise_agent': 'te',
         'practical_task_agent': 'pt',
-        'quiz_agent': 'qz'
+        'quiz_agent': 'qz',
+        'keyword_highlighting_agent': 'kh',
+        'audiobook_agent': 'ab'
       };
       const prefix = prefixMap[agentName];
       if (prefix) {
