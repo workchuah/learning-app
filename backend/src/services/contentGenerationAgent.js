@@ -60,34 +60,43 @@ Return only valid JSON, no markdown code blocks.`;
 }
 
 async function generatePracticalTasks(topicTitle, courseContext, lectureNotes = '', provider = 'openai', model = null, apiKey = null) {
-  const prompt = `You are an expert educator. Create practical, hands-on tasks for the following topic.
+  const prompt = `You are an expert educator. Create ONE practical, hands-on task for the following topic.
 
 Course Context: ${courseContext}
 Topic: ${topicTitle}
 ${lectureNotes ? `\nLecture Notes:\n${lectureNotes}\n` : ''}
 
 IMPORTANT: Analyze the lecture notes above to understand the difficulty level and concepts covered. 
-Generate 2-4 practical tasks that:
-- Match the difficulty level of the lecture notes (do not exceed the concepts covered)
-- Build upon the concepts explained in the lecture notes
-- Are appropriate for the student's current progress level
-- Progress gradually from basic to slightly more advanced (but within the scope of the notes)
+Generate ONE practical task that:
+- Matches the difficulty level of the lecture notes (do not exceed the concepts covered)
+- Builds upon the concepts explained in the lecture notes
+- Is appropriate for a BEGINNER student
+- Is beginner-friendly with extremely detailed step-by-step instructions
 
-Each task should have:
-- A clear title
-- A description of what needs to be done
-- Step-by-step instructions that align with the lecture content
+The task should have:
+- A clear, descriptive title
+- A detailed description of what needs to be done and why
+- EXTREMELY DETAILED step-by-step instructions that a complete beginner can follow exactly
+- Each step should be specific, actionable, and include what to expect/verify at each step
+- Include any prerequisites, tools needed, or setup instructions
+- Make it so detailed that a beginner can follow without confusion
 
 Format as JSON:
 {
   "tasks": [
     {
       "title": "Task title",
-      "description": "What the task involves",
-      "steps": ["Step 1", "Step 2", "Step 3"]
+      "description": "Detailed description of what the task involves and why it's important",
+      "steps": [
+        "Step 1: Very detailed instruction with specific actions and expected outcomes",
+        "Step 2: Another very detailed instruction...",
+        "Step 3: Continue with detailed steps..."
+      ]
     }
   ]
 }
+
+IMPORTANT: Generate exactly ONE task with at least 5-8 very detailed steps. Make it beginner-friendly.
 
 Return only valid JSON, no markdown code blocks.`;
 
@@ -113,21 +122,22 @@ async function generateQuiz(topicTitle, courseContext, lectureNotes = '', provid
 
 Course Context: ${courseContext}
 Topic: ${topicTitle}
+${lectureNotes ? `\nLecture Notes:\n${lectureNotes}\n` : ''}
 
 Generate a quiz with:
-- 5-7 Multiple Choice Questions (MCQ) with 4 options each
-- 2-3 Short Answer Questions
+- EXACTLY 10 Multiple Choice Questions (MCQ) with 4 options each
+- EXACTLY 5 Short Answer Questions
 
 For each MCQ:
-- Question
-- 4 options (A, B, C, D)
+- Question that tests understanding of key concepts from the lecture notes
+- 4 options (A, B, C, D) where only one is clearly correct
 - Correct answer (0-3 index)
-- Explanation
+- Detailed explanation of why the correct answer is right and why others are wrong
 
 For each Short Answer:
-- Question
-- Sample answer
-- Explanation
+- Question that requires understanding and explanation
+- Sample answer that demonstrates expected depth of knowledge
+- Explanation or grading criteria
 
 Format as JSON:
 {
@@ -147,6 +157,8 @@ Format as JSON:
     }
   ]
 }
+
+IMPORTANT: Generate exactly 10 MCQ questions and exactly 5 short answer questions.
 
 Return only valid JSON, no markdown code blocks.`;
 
