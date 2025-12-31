@@ -56,12 +56,6 @@ function renderTopicContent() {
   if (topic.lecture_notes) {
     document.getElementById('lecture-notes-section').style.display = 'block';
     document.getElementById('lecture-notes-content').innerHTML = simpleMarkdownToHtml(topic.lecture_notes);
-    
-    // Show highlighted version if available
-    if (topic.highlighted_lecture_notes) {
-      document.getElementById('highlighted-lecture-notes-content').innerHTML = simpleMarkdownToHtml(topic.highlighted_lecture_notes);
-      document.getElementById('toggle-highlight-btn').style.display = 'inline-block';
-    }
   }
   
   // Audiobook
@@ -426,21 +420,6 @@ function simpleMarkdownToHtml(markdown) {
   
   return html;
 }
-
-// Toggle between original and highlighted lecture notes
-document.addEventListener('click', (e) => {
-  if (e.target.id === 'toggle-highlight-btn') {
-    document.getElementById('lecture-notes-content').style.display = 'none';
-    document.getElementById('highlighted-lecture-notes-content').style.display = 'block';
-    document.getElementById('toggle-highlight-btn').style.display = 'none';
-    document.getElementById('toggle-original-btn').style.display = 'inline-block';
-  } else if (e.target.id === 'toggle-original-btn') {
-    document.getElementById('lecture-notes-content').style.display = 'block';
-    document.getElementById('highlighted-lecture-notes-content').style.display = 'none';
-    document.getElementById('toggle-highlight-btn').style.display = 'inline-block';
-    document.getElementById('toggle-original-btn').style.display = 'none';
-  }
-});
 
 // Load topic on page load
 loadTopic();

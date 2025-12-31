@@ -193,30 +193,6 @@ Return only valid JSON, no markdown code blocks.`;
   }
 }
 
-async function highlightKeywords(lectureNotes, provider = 'openai', model = null, apiKey = null) {
-  const prompt = `You are an expert educator. Analyze the following lecture notes and highlight important keywords and key concepts.
-
-Lecture Notes:
-${lectureNotes}
-
-Task:
-1. Identify important keywords, key concepts, technical terms, and definitions
-2. Return the lecture notes with keywords wrapped in <mark> tags for highlighting
-3. Preserve all markdown formatting
-4. Only highlight truly important terms (not every word)
-5. Focus on: definitions, key concepts, technical terms, important principles
-
-Example format:
-Original: "JavaScript is a programming language."
-Highlighted: "JavaScript is a <mark>programming language</mark>."
-
-Return the highlighted version of the lecture notes in markdown format, preserving all structure.`;
-
-  const openaiKey = provider === 'openai' ? apiKey : null;
-  const geminiKey = provider === 'gemini' ? apiKey : null;
-  return await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
-}
-
 async function generateAudiobook(lectureNotes, provider = 'openai', apiKey = null) {
   // For audiobook, we'll use OpenAI TTS API or Google Text-to-Speech
   // This requires additional setup - for now, return a placeholder
@@ -289,7 +265,6 @@ module.exports = {
   generateTutorialExercises,
   generatePracticalTasks,
   generateQuiz,
-  highlightKeywords,
   generateAudiobook,
 };
 

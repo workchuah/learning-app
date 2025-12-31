@@ -24,7 +24,6 @@ const UserSchema = new mongoose.Schema(
       tutorial_exercise_agent: { type: AgentApiKeysSchema, default: () => ({}) },
       practical_task_agent: { type: AgentApiKeysSchema, default: () => ({}) },
       quiz_agent: { type: AgentApiKeysSchema, default: () => ({}) },
-      keyword_highlighting_agent: { type: AgentApiKeysSchema, default: () => ({}) },
       audiobook_agent: { type: AgentApiKeysSchema, default: () => ({}) },
     },
   },
