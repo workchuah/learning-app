@@ -135,13 +135,16 @@ exports.generateCourseStructure = async (req, res, next) => {
 
     try {
       const user = await require('../models/User').findById(req.user._id);
+      const apiKeys = user.api_keys?.course_structure_agent || {};
       const structure = await generateCourseStructure(
         course.title,
         course.goal,
         course.target_timeline,
         course.outline_text,
         user.ai_provider_preference || 'auto',
-        user.ai_provider_preference === 'openai' ? user.openai_model : user.gemini_model
+        user.ai_provider_preference === 'openai' ? user.openai_model : user.gemini_model,
+        apiKeys.openai_key || null,
+        apiKeys.gemini_key || null
       );
 
       // Create modules and topics

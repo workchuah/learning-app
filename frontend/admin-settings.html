@@ -71,17 +71,89 @@
     </div>
 
     <div class="card" style="margin-top: 30px;">
-      <h2>API Keys Configuration</h2>
-      <p style="color: #64748b; margin-top: 12px;">
-        API keys must be configured in the backend environment variables:
+      <h2>AI Agent API Keys Configuration</h2>
+      <p style="color: #64748b; margin-top: 12px; margin-bottom: 20px;">
+        Configure API keys for each AI agent. Each agent can use different API keys for OpenAI and Gemini.
       </p>
-      <ul style="margin-top: 12px; padding-left: 20px; color: #64748b;">
-        <li><code>OPENAI_API_KEY</code> - Your OpenAI API key</li>
-        <li><code>GEMINI_API_KEY</code> - Your Google Gemini API key</li>
-      </ul>
-      <p style="color: #64748b; margin-top: 12px;">
-        These are configured on the server side for security. Contact your administrator to set them up.
-      </p>
+
+      <!-- Course Structure Agent -->
+      <div style="margin-bottom: 30px; padding: 20px; background: #f8fafc; border-radius: 8px;">
+        <h3 style="margin-top: 0; margin-bottom: 16px;">📚 Course Structure Agent</h3>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
+          Used for: Generating course modules and topics from course outline
+        </p>
+        
+        <div class="form-group">
+          <label class="form-label" for="cs-openai-key">OpenAI API Key</label>
+          <input 
+            type="password" 
+            id="cs-openai-key" 
+            class="form-input" 
+            placeholder="sk-..."
+            style="font-family: monospace;"
+          >
+          <small style="color: #64748b; font-size: 12px;">
+            Status: <span id="cs-openai-status" class="status-badge">Not configured</span>
+          </small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="cs-gemini-key">Google Gemini API Key</label>
+          <input 
+            type="password" 
+            id="cs-gemini-key" 
+            class="form-input" 
+            placeholder="Your Gemini API key"
+            style="font-family: monospace;"
+          >
+          <small style="color: #64748b; font-size: 12px;">
+            Status: <span id="cs-gemini-status" class="status-badge">Not configured</span>
+          </small>
+        </div>
+      </div>
+
+      <!-- Content Generation Agent -->
+      <div style="margin-bottom: 30px; padding: 20px; background: #f8fafc; border-radius: 8px;">
+        <h3 style="margin-top: 0; margin-bottom: 16px;">✍️ Content Generation Agent</h3>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
+          Used for: Generating lecture notes, exercises, practical tasks, and quizzes for each topic
+        </p>
+        
+        <div class="form-group">
+          <label class="form-label" for="cg-openai-key">OpenAI API Key</label>
+          <input 
+            type="password" 
+            id="cg-openai-key" 
+            class="form-input" 
+            placeholder="sk-..."
+            style="font-family: monospace;"
+          >
+          <small style="color: #64748b; font-size: 12px;">
+            Status: <span id="cg-openai-status" class="status-badge">Not configured</span>
+          </small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="cg-gemini-key">Google Gemini API Key</label>
+          <input 
+            type="password" 
+            id="cg-gemini-key" 
+            class="form-input" 
+            placeholder="Your Gemini API key"
+            style="font-family: monospace;"
+          >
+          <small style="color: #64748b; font-size: 12px;">
+            Status: <span id="cg-gemini-status" class="status-badge">Not configured</span>
+          </small>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button class="btn btn-primary" id="save-api-keys-btn">Save API Keys</button>
+        <small style="display: block; color: #64748b; margin-top: 8px;">
+          💡 Tip: Leave fields empty to remove API keys. Keys are stored securely and never displayed.
+        </small>
+      </div>
     </div>
   </main>
 

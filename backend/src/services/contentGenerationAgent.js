@@ -1,6 +1,6 @@
 const aiService = require('./aiService');
 
-async function generateLectureNotes(topicTitle, courseContext, provider = 'auto', model = null) {
+async function generateLectureNotes(topicTitle, courseContext, provider = 'auto', model = null, openaiKey = null, geminiKey = null) {
   const prompt = `You are an expert educator. Create comprehensive lecture notes for the following topic.
 
 Course Context: ${courseContext}
@@ -14,10 +14,10 @@ Generate detailed lecture notes that cover:
 
 Format the notes in clear, well-structured markdown.`;
 
-  return await aiService.generate(prompt, provider, model);
+  return await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
 }
 
-async function generateTutorialExercises(topicTitle, courseContext, provider = 'auto', model = null) {
+async function generateTutorialExercises(topicTitle, courseContext, provider = 'auto', model = null, openaiKey = null, geminiKey = null) {
   const prompt = `You are an expert educator. Create tutorial exercises with answers for the following topic.
 
 Course Context: ${courseContext}
@@ -39,7 +39,7 @@ Format as JSON:
 
 Return only valid JSON, no markdown code blocks.`;
 
-  const response = await aiService.generate(prompt, provider, model);
+  const response = await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
   let jsonStr = response.trim();
   if (jsonStr.startsWith('```')) {
     jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -54,7 +54,7 @@ Return only valid JSON, no markdown code blocks.`;
   }
 }
 
-async function generatePracticalTasks(topicTitle, courseContext, provider = 'auto', model = null) {
+async function generatePracticalTasks(topicTitle, courseContext, provider = 'auto', model = null, openaiKey = null, geminiKey = null) {
   const prompt = `You are an expert educator. Create practical, hands-on tasks for the following topic.
 
 Course Context: ${courseContext}
@@ -78,7 +78,7 @@ Format as JSON:
 
 Return only valid JSON, no markdown code blocks.`;
 
-  const response = await aiService.generate(prompt, provider, model);
+  const response = await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
   let jsonStr = response.trim();
   if (jsonStr.startsWith('```')) {
     jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -93,7 +93,7 @@ Return only valid JSON, no markdown code blocks.`;
   }
 }
 
-async function generateQuiz(topicTitle, courseContext, provider = 'auto', model = null) {
+async function generateQuiz(topicTitle, courseContext, provider = 'auto', model = null, openaiKey = null, geminiKey = null) {
   const prompt = `You are an expert educator. Create a comprehensive quiz for the following topic.
 
 Course Context: ${courseContext}
@@ -135,7 +135,7 @@ Format as JSON:
 
 Return only valid JSON, no markdown code blocks.`;
 
-  const response = await aiService.generate(prompt, provider, model);
+  const response = await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
   let jsonStr = response.trim();
   if (jsonStr.startsWith('```')) {
     jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

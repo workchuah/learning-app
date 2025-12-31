@@ -53,13 +53,14 @@ exports.generateTopicContent = async (req, res, next) => {
       const provider = user.ai_provider_preference || 'auto';
       const model = provider === 'openai' ? user.openai_model : user.gemini_model;
       const courseContext = `${course.title}: ${course.goal}`;
+      const apiKeys = user.api_keys?.content_generation_agent || {};
 
       // Generate all content
       const [lectureNotes, exercises, tasks, quiz] = await Promise.all([
-        generateLectureNotes(topic.title, courseContext, provider, model),
-        generateTutorialExercises(topic.title, courseContext, provider, model),
-        generatePracticalTasks(topic.title, courseContext, provider, model),
-        generateQuiz(topic.title, courseContext, provider, model),
+        generateLectureNotes(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
+        generateTutorialExercises(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
+        generatePracticalTasks(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
+        generateQuiz(topic.title, courseContext, provider, model, apiKeys.openai_key || null, apiKeys.gemini_key || null),
       ]);
 
       topic.lecture_notes = lectureNotes;
