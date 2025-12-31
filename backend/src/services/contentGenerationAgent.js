@@ -37,9 +37,9 @@ Course Context: ${courseContext}
 Topic: ${topicTitle}
 ${lectureNotes ? `\nLecture Notes:\n${lectureNotes}\n` : ''}
 
-Generate 3-5 tutorial exercises based on the lecture notes above. For each exercise:
+Generate 5 tutorial exercises based on the lecture notes above. For each exercise:
 - Provide a clear question or problem that relates to the concepts in the lecture notes
-- Include a detailed answer/explanation
+- Include a detailed answer/explanation, the answer should be in a very orgarnized and detailed format that a beginner can understand and follow. (Combination of Paragraph and points with sub-points)
 
 Format as JSON:
 {
