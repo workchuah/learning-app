@@ -79,8 +79,23 @@ function renderModules() {
     moduleHeader.style.justifyContent = 'space-between';
     moduleHeader.style.alignItems = 'center';
     moduleHeader.style.cursor = 'pointer';
+    
+    // Get difficulty level badge
+    const difficulty = module.difficulty_level || 'beginner';
+    const difficultyLabels = {
+      'beginner': { label: 'Beginner', color: '#10b981', bg: '#d1fae5' },
+      'medium': { label: 'Medium', color: '#f59e0b', bg: '#fef3c7' },
+      'expert': { label: 'Expert', color: '#ef4444', bg: '#fee2e2' }
+    };
+    const diffInfo = difficultyLabels[difficulty] || difficultyLabels['beginner'];
+    
     moduleHeader.innerHTML = `
-      <h3 style="margin: 0;">${module.title}</h3>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <h3 style="margin: 0;">${module.title}</h3>
+        <span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ${diffInfo.bg}; color: ${diffInfo.color};">
+          ${diffInfo.label}
+        </span>
+      </div>
       <span style="color: #64748b;">▼</span>
     `;
     

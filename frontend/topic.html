@@ -42,11 +42,9 @@
       <section id="lecture-notes-section" class="card" style="display: none; margin-bottom: 30px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h2 style="margin: 0;">📖 Lecture Notes</h2>
-          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 12px;">
             <button class="btn btn-secondary" id="toggle-highlight-btn" style="display: none;">Show Highlighted Version</button>
             <button class="btn btn-secondary" id="toggle-original-btn" style="display: none;">Show Original</button>
-            <button class="btn btn-outline" id="regenerate-lecture-notes-btn" title="Regenerate Lecture Notes">🔄 Regenerate Notes</button>
-            <button class="btn btn-outline" id="regenerate-highlighted-btn" style="display: none;" title="Regenerate Highlighted Notes">🔄 Regenerate Highlights</button>
           </div>
         </div>
         <div id="lecture-notes-content" class="markdown-content"></div>
@@ -55,10 +53,7 @@
 
       <!-- Audiobook -->
       <section id="audiobook-section" class="card" style="display: none; margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="margin: 0;">🎧 Audiobook</h2>
-          <button class="btn btn-outline" id="regenerate-audiobook-btn" title="Regenerate Audiobook">🔄 Regenerate</button>
-        </div>
+        <h2>🎧 Audiobook</h2>
         <div id="audiobook-content">
           <audio id="audiobook-player" controls style="width: 100%; margin-top: 16px;">
             Your browser does not support the audio element.
@@ -68,28 +63,19 @@
 
       <!-- Tutorial Exercises -->
       <section id="tutorial-section" class="card" style="display: none; margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="margin: 0;">✏️ Tutorial Exercises</h2>
-          <button class="btn btn-outline" id="regenerate-tutorial-btn" title="Regenerate Tutorial Exercises">🔄 Regenerate</button>
-        </div>
+        <h2>✏️ Tutorial Exercises</h2>
         <div id="tutorial-exercises-content"></div>
       </section>
 
       <!-- Practical Tasks -->
       <section id="practical-tasks-section" class="card" style="display: none; margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="margin: 0;">🔧 Practical Tasks</h2>
-          <button class="btn btn-outline" id="regenerate-practical-btn" title="Regenerate Practical Tasks">🔄 Regenerate</button>
-        </div>
+        <h2>🔧 Practical Tasks</h2>
         <div id="practical-tasks-content"></div>
       </section>
 
       <!-- Quiz -->
       <section id="quiz-section" class="card" style="display: none; margin-bottom: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="margin: 0;">📝 Quiz</h2>
-          <button class="btn btn-outline" id="regenerate-quiz-btn" title="Regenerate Quiz">🔄 Regenerate</button>
-        </div>
+        <h2>📝 Quiz</h2>
         <div id="quiz-content"></div>
         <div id="quiz-results" style="display: none; margin-top: 20px;"></div>
       </section>

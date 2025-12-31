@@ -62,12 +62,17 @@ exports.generateTopicContent = async (req, res, next) => {
       const keywordKeys = user.api_keys?.keyword_highlighting_agent || {};
       const audiobookKeys = user.api_keys?.audiobook_agent || {};
       
+      // Get module difficulty level for content generation
+      const module = await Module.findById(topic.module_id);
+      const difficultyLevel = module?.difficulty_level || 'beginner';
+      
       // Generate lecture notes first (needed for other agents)
       const contentGenProvider = contentGenKeys.provider || 'openai';
       const contentGenModel = contentGenProvider === 'openai' ? user.openai_model : user.gemini_model;
       const lectureNotes = await generateLectureNotes(
         topic.title, 
         courseContext, 
+        difficultyLevel,
         contentGenProvider, 
         contentGenModel, 
         contentGenKeys.api_key || null
@@ -142,150 +147,6 @@ exports.updatePracticalTask = async (req, res, next) => {
     }
 
     res.json(topic);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Regenerate individual sections
-exports.regenerateSection = async (req, res, next) => {
-  try {
-    const { section } = req.params;
-    const topic = await Topic.findById(req.params.id)
-      .populate('course_id', 'title goal');
-    
-    if (!topic) {
-      return res.status(404).json({ error: 'Topic not found' });
-    }
-
-    // Verify course ownership
-    const course = await Course.findById(topic.course_id);
-    if (!course || course.created_by.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const user = await require('../models/User').findById(req.user._id);
-    const courseContext = `${course.title}: ${course.goal}`;
-
-    try {
-      switch (section) {
-        case 'lecture_notes': {
-          const contentGenKeys = user.api_keys?.content_generation_agent || {};
-          const provider = contentGenKeys.provider || 'openai';
-          const model = provider === 'openai' ? user.openai_model : user.gemini_model;
-          const lectureNotes = await generateLectureNotes(
-            topic.title, 
-            courseContext, 
-            provider, 
-            model, 
-            contentGenKeys.api_key || null
-          );
-          topic.lecture_notes = lectureNotes;
-          await topic.save();
-          return res.json({ message: 'Lecture notes regenerated successfully', topic });
-        }
-
-        case 'highlighted_notes': {
-          if (!topic.lecture_notes) {
-            return res.status(400).json({ error: 'Lecture notes must be generated first' });
-          }
-          const keywordKeys = user.api_keys?.keyword_highlighting_agent || {};
-          const provider = keywordKeys.provider || 'openai';
-          const model = provider === 'openai' ? user.openai_model : user.gemini_model;
-          const highlightedNotes = await highlightKeywords(
-            topic.lecture_notes, 
-            provider, 
-            model, 
-            keywordKeys.api_key || null
-          );
-          topic.highlighted_lecture_notes = highlightedNotes;
-          await topic.save();
-          return res.json({ message: 'Highlighted notes regenerated successfully', topic });
-        }
-
-        case 'audiobook': {
-          if (!topic.lecture_notes) {
-            return res.status(400).json({ error: 'Lecture notes must be generated first' });
-          }
-          const audiobookKeys = user.api_keys?.audiobook_agent || {};
-          const provider = audiobookKeys.provider || 'openai';
-          const audiobookUrl = await generateAudiobook(
-            topic.lecture_notes, 
-            provider, 
-            audiobookKeys.api_key || null
-          );
-          topic.audiobook_url = audiobookUrl;
-          await topic.save();
-          return res.json({ message: 'Audiobook regenerated successfully', topic });
-        }
-
-        case 'tutorial_exercises': {
-          if (!topic.lecture_notes) {
-            return res.status(400).json({ error: 'Lecture notes must be generated first' });
-          }
-          const tutorialKeys = user.api_keys?.tutorial_exercise_agent || {};
-          const provider = tutorialKeys.provider || 'openai';
-          const model = provider === 'openai' ? user.openai_model : user.gemini_model;
-          const exercises = await generateTutorialExercises(
-            topic.title, 
-            courseContext, 
-            topic.lecture_notes, 
-            provider, 
-            model, 
-            tutorialKeys.api_key || null
-          );
-          topic.tutorial_exercises = exercises;
-          await topic.save();
-          return res.json({ message: 'Tutorial exercises regenerated successfully', topic });
-        }
-
-        case 'practical_tasks': {
-          if (!topic.lecture_notes) {
-            return res.status(400).json({ error: 'Lecture notes must be generated first' });
-          }
-          const practicalKeys = user.api_keys?.practical_task_agent || {};
-          const provider = practicalKeys.provider || 'openai';
-          const model = provider === 'openai' ? user.openai_model : user.gemini_model;
-          const tasks = await generatePracticalTasks(
-            topic.title, 
-            courseContext, 
-            topic.lecture_notes, 
-            provider, 
-            model, 
-            practicalKeys.api_key || null
-          );
-          topic.practical_tasks = tasks;
-          await topic.save();
-          return res.json({ message: 'Practical tasks regenerated successfully', topic });
-        }
-
-        case 'quiz': {
-          if (!topic.lecture_notes) {
-            return res.status(400).json({ error: 'Lecture notes must be generated first' });
-          }
-          const quizKeys = user.api_keys?.quiz_agent || {};
-          const provider = quizKeys.provider || 'openai';
-          const model = provider === 'openai' ? user.openai_model : user.gemini_model;
-          const quiz = await generateQuiz(
-            topic.title, 
-            courseContext, 
-            topic.lecture_notes, 
-            provider, 
-            model, 
-            quizKeys.api_key || null
-          );
-          topic.quiz = quiz;
-          await topic.save();
-          return res.json({ message: 'Quiz regenerated successfully', topic });
-        }
-
-        default:
-          return res.status(400).json({ error: 'Invalid section specified' });
-      }
-    } catch (error) {
-      console.error(`Error regenerating ${section}:`, error);
-      throw error;
-    }
   } catch (error) {
     next(error);
   }

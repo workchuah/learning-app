@@ -149,21 +149,32 @@ exports.generateCourseStructure = async (req, res, next) => {
       );
 
       // Create modules and topics
-      for (let i = 0; i < structure.modules.length; i++) {
-        const moduleData = structure.modules[i];
+      // Sort modules to ensure Beginner → Medium → Expert order
+      const difficultyOrder = { 'beginner': 1, 'medium': 2, 'expert': 3 };
+      const sortedModules = structure.modules.sort((a, b) => {
+        const levelA = difficultyOrder[a.difficulty_level?.toLowerCase()] || 1;
+        const levelB = difficultyOrder[b.difficulty_level?.toLowerCase()] || 1;
+        if (levelA !== levelB) return levelA - levelB;
+        return 0;
+      });
+
+      let order = 1;
+      for (const moduleData of sortedModules) {
         const module = await Module.create({
           course_id: course._id,
           title: moduleData.title,
           description: moduleData.description || '',
-          order: i + 1,
+          difficulty_level: (moduleData.difficulty_level || 'beginner').toLowerCase(),
+          order: order++,
         });
 
-        for (let j = 0; j < moduleData.topics.length; j++) {
+        let topicOrder = 1;
+        for (const topicTitle of moduleData.topics) {
           await Topic.create({
             module_id: module._id,
             course_id: course._id,
-            title: moduleData.topics[j],
-            order: j + 1,
+            title: topicTitle,
+            order: topicOrder++,
             status: 'pending',
           });
         }

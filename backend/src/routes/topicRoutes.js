@@ -8,7 +8,6 @@ router.use(authenticate);
 
 router.get('/:id', topicController.getTopic);
 router.post('/:id/generate-content', topicController.generateTopicContent);
-router.post('/:id/regenerate/:section', topicController.regenerateSection);
 router.patch('/:id/practical-task', topicController.updatePracticalTask);
 
 module.exports = router;

@@ -61,7 +61,6 @@ function renderTopicContent() {
     if (topic.highlighted_lecture_notes) {
       document.getElementById('highlighted-lecture-notes-content').innerHTML = simpleMarkdownToHtml(topic.highlighted_lecture_notes);
       document.getElementById('toggle-highlight-btn').style.display = 'inline-block';
-      document.getElementById('regenerate-highlighted-btn').style.display = 'inline-block';
     }
   }
   
@@ -441,62 +440,6 @@ document.addEventListener('click', (e) => {
     document.getElementById('toggle-highlight-btn').style.display = 'inline-block';
     document.getElementById('toggle-original-btn').style.display = 'none';
   }
-});
-
-// Regenerate section handlers
-async function regenerateSection(section, sectionName) {
-  const topicId = new URLSearchParams(window.location.search).get('id');
-  if (!topicId) return;
-
-  const btn = document.getElementById(`regenerate-${section}-btn`);
-  const errorDiv = document.getElementById('error-message');
-  const successDiv = document.getElementById('success-message');
-
-  if (!btn) return;
-
-  btn.disabled = true;
-  btn.textContent = '🔄 Regenerating...';
-  errorDiv.classList.add('hidden');
-  successDiv.classList.add('hidden');
-
-  try {
-    const result = await api.regenerateTopicSection(topicId, section);
-    topic = result.topic;
-    renderTopicContent();
-    successDiv.textContent = `${sectionName} regenerated successfully!`;
-    successDiv.classList.remove('hidden');
-  } catch (error) {
-    errorDiv.textContent = error.message;
-    errorDiv.classList.remove('hidden');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🔄 Regenerate';
-  }
-}
-
-// Add regenerate button event listeners
-document.getElementById('regenerate-lecture-notes-btn')?.addEventListener('click', () => {
-  regenerateSection('lecture_notes', 'Lecture Notes');
-});
-
-document.getElementById('regenerate-highlighted-btn')?.addEventListener('click', () => {
-  regenerateSection('highlighted_notes', 'Highlighted Notes');
-});
-
-document.getElementById('regenerate-audiobook-btn')?.addEventListener('click', () => {
-  regenerateSection('audiobook', 'Audiobook');
-});
-
-document.getElementById('regenerate-tutorial-btn')?.addEventListener('click', () => {
-  regenerateSection('tutorial_exercises', 'Tutorial Exercises');
-});
-
-document.getElementById('regenerate-practical-btn')?.addEventListener('click', () => {
-  regenerateSection('practical_tasks', 'Practical Tasks');
-});
-
-document.getElementById('regenerate-quiz-btn')?.addEventListener('click', () => {
-  regenerateSection('quiz', 'Quiz');
 });
 
 // Load topic on page load

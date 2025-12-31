@@ -1,15 +1,26 @@
 const aiService = require('./aiService');
 
-async function generateLectureNotes(topicTitle, courseContext, provider = 'openai', model = null, apiKey = null) {
+async function generateLectureNotes(topicTitle, courseContext, difficultyLevel = 'beginner', provider = 'openai', model = null, apiKey = null) {
+  const difficultyInstructions = {
+    'beginner': 'Write for complete beginners. Use simple language, provide clear explanations, include basic examples, and avoid advanced terminology. Start from the very basics.',
+    'medium': 'Write for intermediate learners. Assume basic knowledge, use appropriate terminology, include more complex examples, and build upon foundational concepts.',
+    'expert': 'Write for advanced learners. Use advanced terminology, assume strong foundational knowledge, include complex examples, and cover advanced topics and edge cases.'
+  };
+  
+  const instruction = difficultyInstructions[difficultyLevel?.toLowerCase()] || difficultyInstructions['beginner'];
+  
   const prompt = `You are an expert educator. Create comprehensive lecture notes for the following topic.
 
 Course Context: ${courseContext}
 Topic: ${topicTitle}
+Difficulty Level: ${difficultyLevel?.toUpperCase() || 'BEGINNER'}
+
+${instruction}
 
 Generate detailed lecture notes that cover:
-- Key concepts and definitions
+- Key concepts and definitions (appropriate for ${difficultyLevel} level)
 - Important principles and theories
-- Examples and applications
+- Examples and applications (matching the difficulty level)
 - Summary points
 
 Format the notes in clear, well-structured markdown.`;
@@ -67,19 +78,21 @@ Topic: ${topicTitle}
 ${lectureNotes ? `\nLecture Notes:\n${lectureNotes}\n` : ''}
 
 IMPORTANT: Analyze the lecture notes above to understand the difficulty level and concepts covered. 
-Generate ONE practical task that:
+Generate EXACTLY ONE practical task that:
 - Matches the difficulty level of the lecture notes (do not exceed the concepts covered)
 - Builds upon the concepts explained in the lecture notes
-- Is appropriate for a BEGINNER student
-- Is beginner-friendly with extremely detailed step-by-step instructions
+- Is appropriate for BEGINNER students
+- Has EXTREMELY DETAILED step-by-step instructions that a complete beginner can follow exactly
 
 The task should have:
 - A clear, descriptive title
-- A detailed description of what needs to be done and why
-- EXTREMELY DETAILED step-by-step instructions that a complete beginner can follow exactly
-- Each step should be specific, actionable, and include what to expect/verify at each step
-- Include any prerequisites, tools needed, or setup instructions
-- Make it so detailed that a beginner can follow without confusion
+- A detailed description of what needs to be done and why it's important
+- EXTREMELY DETAILED step-by-step instructions (at least 5-8 steps) where:
+  * Each step is specific and actionable
+  * Each step includes what to expect/verify at that step
+  * Each step is written so a beginner can follow without confusion
+  * Include any prerequisites, tools needed, or setup instructions
+  * Make it so detailed that a beginner can follow without asking questions
 
 Format as JSON:
 {
@@ -89,8 +102,10 @@ Format as JSON:
       "description": "Detailed description of what the task involves and why it's important",
       "steps": [
         "Step 1: Very detailed instruction with specific actions and expected outcomes",
-        "Step 2: Another very detailed instruction...",
-        "Step 3: Continue with detailed steps..."
+        "Step 2: Another very detailed instruction with what to check/verify",
+        "Step 3: Continue with detailed steps...",
+        "Step 4: ...",
+        "Step 5: ..."
       ]
     }
   ]
