@@ -43,6 +43,24 @@ app.use(morgan('dev'));
 
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Root route
+app.get('/', (_req, res) => {
+  res.json({
+    message: 'Chuah Learning App API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      courses: '/api/courses',
+      topics: '/api/topics',
+      progress: '/api/progress',
+      admin: '/api/admin'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
