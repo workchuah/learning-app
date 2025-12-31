@@ -15,7 +15,8 @@ exports.updateProgress = async (req, res, next) => {
     });
 
     if (!progress) {
-      progress = await Progress.create({
+      // Create new progress record
+      const progressData = {
         user_id: req.user._id,
         course_id,
         module_id: module_id || null,
@@ -23,7 +24,18 @@ exports.updateProgress = async (req, res, next) => {
         type,
         completed: completed || false,
         quiz_score: quiz_score || null,
-      });
+      };
+      
+      // If answers provided, add to quiz_attempts
+      if (answers) {
+        progressData.quiz_attempts = [{
+          score: quiz_score || 0,
+          submitted_at: new Date(),
+          answers: answers,
+        }];
+      }
+      
+      progress = await Progress.create(progressData);
     } else {
       if (completed !== undefined) {
         progress.completed = completed;
@@ -33,11 +45,34 @@ exports.updateProgress = async (req, res, next) => {
       }
       if (quiz_score !== undefined) {
         progress.quiz_score = quiz_score;
-        progress.quiz_attempts.push({
-          score: quiz_score,
-          submitted_at: new Date(),
-          answers: answers || {},
-        });
+        // Always save answers with quiz score
+        if (answers) {
+          progress.quiz_attempts.push({
+            score: quiz_score,
+            submitted_at: new Date(),
+            answers: answers,
+          });
+        }
+      }
+      // If completing and answers provided, ensure answers are saved
+      if (completed && answers) {
+        // Check if we need to update latest attempt or create new one
+        if (progress.quiz_attempts && progress.quiz_attempts.length > 0) {
+          // Always update the latest attempt with answers when completing
+          const latestAttempt = progress.quiz_attempts[progress.quiz_attempts.length - 1];
+          latestAttempt.answers = answers; // Always update with latest answers
+          // Update score if provided
+          if (quiz_score !== undefined) {
+            latestAttempt.score = quiz_score;
+          }
+        } else {
+          // No previous attempt, create one with answers
+          progress.quiz_attempts.push({
+            score: quiz_score !== undefined ? quiz_score : (progress.quiz_score || 0),
+            submitted_at: new Date(),
+            answers: answers,
+          });
+        }
       }
       progress.last_accessed_at = new Date();
       await progress.save();

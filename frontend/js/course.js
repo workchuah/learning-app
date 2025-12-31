@@ -145,18 +145,52 @@ async function loadModuleTopics(moduleId, container) {
       const topicId = typeof topic._id === 'string' ? topic._id : topic._id?.toString();
       topicLink.href = `topic.html?id=${topicId}&courseId=${courseId}`;
       topicLink.className = 'topic-link';
-      topicLink.textContent = `${topic.order || ''}. ${topic.title || 'Untitled Topic'}`;
+      
+      // Check if topic is completed
+      const isCompleted = topic.progress && topic.progress.completed;
+      
+      // Create link content with completion badge
+      const linkContent = document.createElement('div');
+      linkContent.style.display = 'flex';
+      linkContent.style.alignItems = 'center';
+      linkContent.style.justifyContent = 'space-between';
+      linkContent.style.width = '100%';
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = `${topic.order || ''}. ${topic.title || 'Untitled Topic'}`;
+      
+      linkContent.appendChild(titleSpan);
+      
+      // Add completed badge if topic is completed
+      if (isCompleted) {
+        const badge = document.createElement('span');
+        badge.textContent = '✅ Completed';
+        badge.style.fontSize = '12px';
+        badge.style.color = '#10b981';
+        badge.style.fontWeight = '600';
+        badge.style.marginLeft = '8px';
+        linkContent.appendChild(badge);
+      }
+      
+      topicLink.appendChild(linkContent);
       topicLink.style.textDecoration = 'none';
       topicLink.style.color = '#3b82f6';
       topicLink.style.padding = '8px 12px';
       topicLink.style.borderRadius = '6px';
       topicLink.style.transition = 'background 0.2s';
       topicLink.style.display = 'block';
+      
+      // Style completed topics differently
+      if (isCompleted) {
+        topicLink.style.background = '#f0fdf4';
+        topicLink.style.borderLeft = '3px solid #10b981';
+      }
+      
       topicLink.addEventListener('mouseenter', () => {
-        topicLink.style.background = '#f1f5f9';
+        topicLink.style.background = isCompleted ? '#d1fae5' : '#f1f5f9';
       });
       topicLink.addEventListener('mouseleave', () => {
-        topicLink.style.background = 'transparent';
+        topicLink.style.background = isCompleted ? '#f0fdf4' : 'transparent';
       });
       topicsList.appendChild(topicLink);
     });

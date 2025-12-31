@@ -104,20 +104,40 @@ exports.getCourse = async (req, res, next) => {
     const modules = await Module.find({ course_id: course._id }).sort({ order: 1 });
     const topics = await Topic.find({ course_id: course._id }).sort({ order: 1 });
     
-    // Calculate progress
-    const totalTopics = topics.length;
-    const completedTopics = await require('../models/Progress').countDocuments({
+    // Get progress for all topics
+    const Progress = require('../models/Progress');
+    const progressRecords = await Progress.find({
       user_id: req.user._id,
       course_id: course._id,
       type: 'topic',
-      completed: true,
     });
+    
+    // Create a map of topic_id to progress
+    const progressMap = {};
+    progressRecords.forEach(p => {
+      if (p.topic_id) {
+        progressMap[p.topic_id.toString()] = {
+          completed: p.completed || false,
+          quiz_score: p.quiz_score || null,
+        };
+      }
+    });
+    
+    // Add progress info to topics
+    const topicsWithProgress = topics.map(topic => ({
+      ...topic.toObject(),
+      progress: progressMap[topic._id.toString()] || null,
+    }));
+    
+    // Calculate progress
+    const totalTopics = topics.length;
+    const completedTopics = progressRecords.filter(p => p.completed).length;
     
     const progressPercentage = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
     course.progress_percentage = progressPercentage;
     await course.save();
 
-    res.json({ course, modules, topics });
+    res.json({ course, modules, topics: topicsWithProgress });
   } catch (error) {
     next(error);
   }

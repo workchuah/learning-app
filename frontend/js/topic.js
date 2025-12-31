@@ -4,6 +4,7 @@ requireAuth();
 let topicId = null;
 let courseId = null;
 let topic = null;
+let progress = null;
 let quizSubmitted = false;
 
 async function loadTopic() {
@@ -33,6 +34,21 @@ async function loadTopic() {
   
   try {
     topic = await api.getTopic(topicId);
+    
+    // Load progress data to get saved quiz answers
+    try {
+      const progressData = await api.getProgress(courseId || topic.course_id, topicId);
+      if (progressData && progressData.length > 0) {
+        // Get the most recent progress for this topic
+        progress = progressData.find(p => p.topic_id === topicId || (p.topic_id && p.topic_id.toString() === topicId)) || progressData[0];
+        if (progress && progress.completed) {
+          quizSubmitted = true;
+        }
+      }
+    } catch (progressError) {
+      console.warn('Could not load progress:', progressError);
+      // Continue without progress data
+    }
     
     document.getElementById('topic-title').textContent = topic.title;
     
@@ -145,7 +161,14 @@ function renderTopicContent() {
   // Quiz
   if (topic.quiz && (topic.quiz.mcq_questions?.length > 0 || topic.quiz.short_answer_questions?.length > 0)) {
     document.getElementById('quiz-section').style.display = 'block';
-    renderQuiz();
+    
+    // If topic is completed, show results instead of form
+    if (progress && progress.completed && progress.quiz_attempts && progress.quiz_attempts.length > 0) {
+      const latestAttempt = progress.quiz_attempts[progress.quiz_attempts.length - 1];
+      showQuizResults(progress.quiz_score || latestAttempt.score, latestAttempt.answers || {});
+    } else {
+      renderQuiz();
+    }
   }
   
   document.getElementById('generate-content-section').style.display = 'none';
@@ -157,6 +180,13 @@ function renderQuiz() {
   
   const form = document.createElement('form');
   form.id = 'quiz-form';
+  
+  // Get saved answers from progress (if exists)
+  let savedAnswers = {};
+  if (progress && progress.quiz_attempts && progress.quiz_attempts.length > 0) {
+    const latestAttempt = progress.quiz_attempts[progress.quiz_attempts.length - 1];
+    savedAnswers = latestAttempt.answers || {};
+  }
   
   // MCQ Questions
   if (topic.quiz.mcq_questions && topic.quiz.mcq_questions.length > 0) {
@@ -171,15 +201,20 @@ function renderQuiz() {
       qDiv.style.border = '1px solid #e2e8f0';
       qDiv.style.borderRadius = '6px';
       
+      const savedAnswer = savedAnswers[`mcq_${index}`];
+      
       qDiv.innerHTML = `
         <p style="font-weight: 500; margin-bottom: 12px;">${index + 1}. ${q.question}</p>
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${q.options.map((opt, optIndex) => `
+          ${q.options.map((opt, optIndex) => {
+            const isChecked = savedAnswer !== undefined && parseInt(savedAnswer) === optIndex;
+            return `
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-              <input type="radio" name="mcq_${index}" value="${optIndex}" required>
+              <input type="radio" name="mcq_${index}" value="${optIndex}" ${isChecked ? 'checked' : ''} required>
               <span>${opt}</span>
             </label>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       `;
       mcqSection.appendChild(qDiv);
@@ -201,9 +236,11 @@ function renderQuiz() {
       qDiv.style.border = '1px solid #e2e8f0';
       qDiv.style.borderRadius = '6px';
       
+      const savedAnswer = savedAnswers[`saq_${index}`] || '';
+      
       qDiv.innerHTML = `
         <p style="font-weight: 500; margin-bottom: 12px;">${index + 1}. ${q.question}</p>
-        <textarea name="saq_${index}" class="form-input" rows="3" required></textarea>
+        <textarea name="saq_${index}" class="form-input" rows="3" required>${savedAnswer}</textarea>
       `;
       saqSection.appendChild(qDiv);
     });
@@ -375,30 +412,50 @@ function showQuizResults(score, answers) {
     });
   }
   
-  // Add "Complete this Topic" button
-  const completeButtonDiv = document.createElement('div');
-  completeButtonDiv.style.marginTop = '30px';
-  completeButtonDiv.style.padding = '20px';
-  completeButtonDiv.style.background = '#f0fdf4';
-  completeButtonDiv.style.border = '2px solid #10b981';
-  completeButtonDiv.style.borderRadius = '8px';
-  completeButtonDiv.style.textAlign = 'center';
-  
-  const completeButton = document.createElement('button');
-  completeButton.className = 'btn btn-primary';
-  completeButton.textContent = '✅ Complete this Topic';
-  completeButton.style.fontSize = '16px';
-  completeButton.style.padding = '12px 32px';
-  completeButton.addEventListener('click', async () => {
-    await completeTopic(score, answers);
-  });
-  
-  completeButtonDiv.innerHTML = `
-    <p style="margin-bottom: 16px; color: #1e293b; font-weight: 500;">Ready to mark this topic as complete?</p>
-  `;
-  completeButtonDiv.appendChild(completeButton);
-  
-  resultsDiv.appendChild(completeButtonDiv);
+  // Add "Complete this Topic" button (only if not already completed)
+  if (!progress || !progress.completed) {
+    const completeButtonDiv = document.createElement('div');
+    completeButtonDiv.style.marginTop = '30px';
+    completeButtonDiv.style.padding = '20px';
+    completeButtonDiv.style.background = '#f0fdf4';
+    completeButtonDiv.style.border = '2px solid #10b981';
+    completeButtonDiv.style.borderRadius = '8px';
+    completeButtonDiv.style.textAlign = 'center';
+    
+    const completeButton = document.createElement('button');
+    completeButton.className = 'btn btn-primary';
+    completeButton.textContent = '✅ Complete this Topic';
+    completeButton.style.fontSize = '16px';
+    completeButton.style.padding = '12px 32px';
+    completeButton.addEventListener('click', async () => {
+      await completeTopic(score, answers);
+    });
+    
+    completeButtonDiv.innerHTML = `
+      <p style="margin-bottom: 16px; color: #1e293b; font-weight: 500;">Ready to mark this topic as complete?</p>
+    `;
+    completeButtonDiv.appendChild(completeButton);
+    
+    resultsDiv.appendChild(completeButtonDiv);
+  } else {
+    // Topic already completed - show completion message
+    const completedDiv = document.createElement('div');
+    completedDiv.style.marginTop = '30px';
+    completedDiv.style.padding = '20px';
+    completedDiv.style.background = '#f0fdf4';
+    completedDiv.style.border = '2px solid #10b981';
+    completedDiv.style.borderRadius = '8px';
+    completedDiv.style.textAlign = 'center';
+    completedDiv.innerHTML = `
+      <p style="color: #10b981; font-weight: 600; font-size: 16px; margin: 0;">
+        ✅ Topic Completed
+      </p>
+      <p style="color: #64748b; font-size: 14px; margin-top: 8px;">
+        This topic has been marked as complete. Your answers and progress have been saved.
+      </p>
+    `;
+    resultsDiv.appendChild(completedDiv);
+  }
 }
 
 // Generate content
@@ -491,6 +548,13 @@ async function completeTopic(quizScore, answers) {
       answers: answers,
     });
     
+    // Update progress variable
+    progress = { 
+      completed: true, 
+      quiz_score: quizScore,
+      quiz_attempts: [{ answers: answers, score: quizScore }]
+    };
+    
     successDiv.textContent = 'Topic completed successfully! Progress updated.';
     successDiv.classList.remove('hidden');
     
@@ -501,13 +565,10 @@ async function completeTopic(quizScore, answers) {
       btn.disabled = true;
     }
     
-    // Reload course to update progress bar
-    if (courseId) {
-      // Small delay to ensure backend has updated
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
+    // Reload page to show updated state and progress bar
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   } catch (error) {
     errorDiv.textContent = 'Failed to complete topic: ' + error.message;
     errorDiv.classList.remove('hidden');
