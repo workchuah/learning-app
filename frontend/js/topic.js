@@ -52,10 +52,13 @@ async function loadTopic() {
     
     document.getElementById('topic-title').textContent = topic.title;
     
+    // Show reset button if topic content exists
     if (topic.status === 'ready' && topic.lecture_notes) {
+      document.getElementById('reset-topic-btn').style.display = 'inline-block';
       renderTopicContent();
     } else {
       document.getElementById('generate-content-section').style.display = 'block';
+      document.getElementById('reset-topic-btn').style.display = 'none';
     }
     
     loading.style.display = 'none';
@@ -480,6 +483,75 @@ document.getElementById('generate-content-btn').addEventListener('click', async 
     errorDiv.classList.remove('hidden');
     btn.disabled = false;
     btn.textContent = 'Generate Topic Content';
+  }
+});
+
+// Reset topic content
+document.getElementById('reset-topic-btn').addEventListener('click', async () => {
+  // Show confirmation dialog
+  const confirmed = confirm(
+    'Are you sure you want to reset this topic?\n\n' +
+    'This will regenerate all content (lecture notes, exercises, tasks, quiz, and audiobook) based on the latest course information.\n\n' +
+    '⚠️ Warning: This will overwrite all existing content and you will lose any unsaved progress or quiz answers.\n\n' +
+    'Click OK to continue or Cancel to abort.'
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+  
+  const btn = document.getElementById('reset-topic-btn');
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  const loading = document.getElementById('loading');
+  const content = document.getElementById('topic-content');
+  
+  // Show loading state
+  btn.disabled = true;
+  btn.textContent = '🔄 Regenerating...';
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  loading.style.display = 'block';
+  content.style.display = 'none';
+  
+  try {
+    // Regenerate topic content
+    const result = await api.generateTopicContent(topicId);
+    topic = result.topic;
+    
+    // Clear progress for this topic (since content is regenerated)
+    try {
+      await api.updateProgress({
+        course_id: courseId || topic.course_id,
+        topic_id: topicId,
+        type: 'topic',
+        completed: false,
+        quiz_score: null,
+        answers: null,
+      });
+    } catch (progressError) {
+      console.warn('Could not reset progress:', progressError);
+      // Continue anyway
+    }
+    
+    // Reset progress variable
+    progress = null;
+    quizSubmitted = false;
+    
+    // Reload the page to show new content
+    successDiv.textContent = 'Topic content regenerated successfully! Reloading...';
+    successDiv.classList.remove('hidden');
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  } catch (error) {
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    errorDiv.textContent = 'Failed to reset topic: ' + error.message;
+    errorDiv.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = '🔄 Reset Topic';
   }
 });
 
