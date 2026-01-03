@@ -67,6 +67,7 @@ CRITICAL:
 - Ensure NO topic repetition across all 150 topics
 - All topics must relate to the course goal
 - Always set estimated_timeline to "36 months"
+- If anything involving laws and regulations, make sure it follows the laws and regulations of Malaysia
 
 MANDATORY CHECKLIST - Verify before responding:
 ✓ I have generated exactly 30 modules (10 beginner + 10 medium + 10 expert)
