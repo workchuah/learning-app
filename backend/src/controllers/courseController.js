@@ -54,22 +54,31 @@ exports.createCourse = async (req, res, next) => {
       }
 
       try {
-        const { title, goal } = req.body;
+        const { title, goal, course_type } = req.body;
         let outlineText = '';
 
         if (req.file) {
           outlineText = await extractTextFromFile(req.file.path);
         }
 
-        const course = await Course.create({
+        // For manual courses, goal is optional
+        const courseData = {
           title,
-          goal,
+          goal: goal || '',
+          course_type: course_type || 'ai_generated',
           target_timeline: '', // Will be estimated during structure generation
           outline_file: req.file ? req.file.filename : '',
           outline_text: outlineText,
           created_by: req.user._id,
           status: 'draft',
-        });
+        };
+
+        // Validate: AI-generated courses require goal
+        if (courseData.course_type === 'ai_generated' && !goal) {
+          return res.status(400).json({ error: 'Course goal is required for AI-generated courses' });
+        }
+
+        const course = await Course.create(courseData);
 
         res.status(201).json(course);
       } catch (error) {
@@ -258,6 +267,41 @@ exports.deleteCourse = async (req, res, next) => {
 
     await Course.findByIdAndDelete(req.params.id);
     res.json({ message: 'Course deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Manual module creation (for manual courses)
+exports.createModule = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    const { title, description } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ error: 'Module title is required' });
+    }
+
+    // Get the highest order number for this course
+    const maxOrder = await Module.findOne({ course_id: course._id })
+      .sort({ order: -1 })
+      .select('order');
+    
+    const order = maxOrder ? maxOrder.order + 1 : 1;
+
+    const module = await Module.create({
+      course_id: course._id,
+      title,
+      description: description || '',
+      order,
+      difficulty_level: 'beginner', // Default for manual courses
+    });
+
+    res.status(201).json(module);
   } catch (error) {
     next(error);
   }

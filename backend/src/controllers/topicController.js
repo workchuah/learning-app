@@ -7,6 +7,9 @@ const {
   generatePracticalTasks,
   generateQuiz,
   generateAudiobook,
+  enhanceContent,
+  generateTutorialExercisesManual,
+  generateMCQManual,
 } = require('../services/contentGenerationAgent');
 
 exports.getTopic = async (req, res, next) => {

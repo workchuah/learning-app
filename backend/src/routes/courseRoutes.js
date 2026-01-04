@@ -10,6 +10,7 @@ router.post('/', courseController.createCourse);
 router.get('/', courseController.getCourses);
 router.get('/:id', courseController.getCourse);
 router.post('/:id/generate-structure', courseController.generateCourseStructure);
+router.post('/:id/modules', courseController.createModule); // Manual module creation
 router.delete('/:id', courseController.deleteCourse);
 
 module.exports = router;
