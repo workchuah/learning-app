@@ -148,42 +148,52 @@ async function loadModuleTopics(moduleId, container) {
       addTopicBtn.textContent = '➕ Add Topic';
       addTopicBtn.style.marginBottom = '16px';
       addTopicBtn.style.cursor = 'pointer';
-      addTopicBtn.addEventListener('click', (e) => {
+      addTopicBtn.style.position = 'relative';
+      addTopicBtn.style.zIndex = '10';
+      
+      // Store moduleId as data attribute for easier access
+      addTopicBtn.setAttribute('data-module-id', moduleId);
+      
+      // Use a named function for easier debugging
+      const handleAddTopicClick = function(e) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
         
-        console.log('Add Topic button clicked, moduleId:', moduleId);
+        console.log('Add Topic button clicked!', 'moduleId:', moduleId);
+        console.log('Event:', e);
+        console.log('Button element:', this);
         
+        const storedModuleId = this.getAttribute('data-module-id') || moduleId;
         const moduleIdInput = document.getElementById('topic-module-id');
         const modal = document.getElementById('add-topic-modal');
         
-        console.log('Modal elements:', { 
+        console.log('Modal elements check:', { 
           moduleIdInput: !!moduleIdInput, 
           modal: !!modal,
-          modalClasses: modal ? modal.className : 'N/A'
+          modalClasses: modal ? modal.className : 'N/A',
+          storedModuleId: storedModuleId
         });
         
         if (!moduleIdInput) {
           console.error('topic-module-id input not found');
           alert('Error: Topic module ID input not found. Please refresh the page.');
-          return;
+          return false;
         }
         
         if (!modal) {
           console.error('add-topic-modal not found');
           alert('Error: Add topic modal not found. Please refresh the page.');
-          return;
+          return false;
         }
         
-        moduleIdInput.value = moduleId;
+        moduleIdInput.value = storedModuleId;
         
         // Force remove hidden class and ensure modal is visible
         // Since .hidden uses !important, we need to remove the class AND set display
         modal.classList.remove('hidden');
         modal.style.setProperty('display', 'flex', 'important'); // Force display with !important
-        console.log('Modal classes after removal:', modal.className);
-        console.log('Modal display style:', modal.style.display);
+        console.log('Modal should be visible now. Classes:', modal.className, 'Display:', modal.style.display);
         
         // Clear previous content
         const titleInput = document.getElementById('topic-title');
@@ -207,8 +217,43 @@ async function loadModuleTopics(moduleId, container) {
         }
         
         return false;
+      };
+      
+      // Attach event listener with capture phase to ensure it fires
+      addTopicBtn.addEventListener('click', handleAddTopicClick, true); // Use capture phase
+      addTopicBtn.addEventListener('click', handleAddTopicClick, false); // Also use bubble phase
+      
+      // Also try mousedown as backup
+      addTopicBtn.addEventListener('mousedown', function(e) {
+        console.log('Add Topic button mousedown event fired!');
+        e.stopPropagation();
+        // Trigger click manually
+        this.click();
       });
+      
+      // Make absolutely sure button is clickable
+      addTopicBtn.style.pointerEvents = 'auto';
+      addTopicBtn.style.userSelect = 'none';
+      
+      console.log('Add Topic button created for module:', moduleId, 'Button:', addTopicBtn);
       container.appendChild(addTopicBtn);
+      console.log('Button appended to container. Container children:', container.children.length);
+      
+      // Verify button was added and is visible
+      setTimeout(() => {
+        const verifyBtn = container.querySelector('button[data-module-id="' + moduleId + '"]');
+        if (verifyBtn) {
+          console.log('✅ Button verification: FOUND', verifyBtn);
+          console.log('Button styles:', {
+            display: window.getComputedStyle(verifyBtn).display,
+            visibility: window.getComputedStyle(verifyBtn).visibility,
+            pointerEvents: window.getComputedStyle(verifyBtn).pointerEvents,
+            zIndex: window.getComputedStyle(verifyBtn).zIndex
+          });
+        } else {
+          console.error('❌ Button verification: NOT FOUND in container');
+        }
+      }, 100);
     }
     
     if (moduleTopics.length === 0) {
@@ -540,6 +585,50 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   await api.logout();
   window.location.href = 'login.html';
 });
+
+// Event delegation for Add Topic buttons (fallback if direct listeners don't work)
+document.addEventListener('click', function(e) {
+  // Check if clicked element is an "Add Topic" button or inside one
+  const addTopicBtn = e.target.closest('button[data-module-id]');
+  if (addTopicBtn && addTopicBtn.textContent.includes('Add Topic')) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Add Topic button clicked via event delegation!', addTopicBtn);
+    
+    const moduleId = addTopicBtn.getAttribute('data-module-id');
+    const moduleIdInput = document.getElementById('topic-module-id');
+    const modal = document.getElementById('add-topic-modal');
+    
+    if (!moduleIdInput || !modal) {
+      console.error('Modal elements not found');
+      return;
+    }
+    
+    moduleIdInput.value = moduleId;
+    modal.classList.remove('hidden');
+    modal.style.setProperty('display', 'flex', 'important');
+    
+    // Clear previous content
+    const titleInput = document.getElementById('topic-title');
+    if (titleInput) {
+      titleInput.value = '';
+    }
+    
+    const editor = document.getElementById('topic-content-editor');
+    if (editor) {
+      editor.innerHTML = '';
+      if (!topicContentEditor) {
+        initTopicContentEditor();
+      } else {
+        topicContentEditor = editor;
+      }
+      if (updatePlaceholder) {
+        updatePlaceholder();
+      }
+    }
+  }
+}, true); // Use capture phase
 
 // Load course on page load
 loadCourse();
