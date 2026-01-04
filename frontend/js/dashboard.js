@@ -108,6 +108,9 @@ document.getElementById('create-course-form').addEventListener('submit', async (
     if (outlineFile) {
       formData.append('outline', outlineFile);
     }
+  } else {
+    // For manual courses, explicitly send empty goal to avoid validation issues
+    formData.append('goal', '');
   }
   
   submitBtn.disabled = true;

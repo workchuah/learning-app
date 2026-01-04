@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const CourseSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    goal: { type: String, default: '' }, // Optional for manual courses
+    goal: { type: String, default: '', required: false }, // Optional for manual courses
     course_type: { type: String, enum: ['ai_generated', 'manual'], default: 'ai_generated' }, // New field
     target_timeline: { type: String, default: '' }, // Estimated timeline (e.g., "4 weeks", "2 months") - auto-generated
     outline_file: { type: String, default: '' }, // Path to uploaded PDF/TXT/MD file
