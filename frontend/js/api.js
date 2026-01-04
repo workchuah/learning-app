@@ -199,6 +199,24 @@ const api = {
     return await response.json();
   },
 
+  enhanceContent: async (topicId, pastedContent) => {
+    const response = await fetch(`${API_BASE_URL}/topics/${topicId}/enhance-content`, {
+      method: 'POST',
+      headers: {
+        ...api.getHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ pasted_content: pastedContent }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to enhance content');
+    }
+    
+    return await response.json();
+  },
+
   // Topic API
   getTopic: async (id) => {
     const response = await fetch(`${API_BASE_URL}/topics/${id}`, {

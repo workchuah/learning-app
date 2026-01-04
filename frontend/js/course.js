@@ -146,9 +146,33 @@ async function loadModuleTopics(moduleId, container) {
       addTopicBtn.className = 'btn btn-secondary';
       addTopicBtn.textContent = '➕ Add Topic';
       addTopicBtn.style.marginBottom = '16px';
-      addTopicBtn.addEventListener('click', () => {
-        document.getElementById('topic-module-id').value = moduleId;
-        document.getElementById('add-topic-modal').classList.remove('hidden');
+      addTopicBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const moduleIdInput = document.getElementById('topic-module-id');
+        const modal = document.getElementById('add-topic-modal');
+        if (moduleIdInput && modal) {
+          moduleIdInput.value = moduleId;
+          modal.classList.remove('hidden');
+          // Clear previous content
+          document.getElementById('topic-title').value = '';
+          const editor = document.getElementById('topic-content-editor');
+          if (editor) {
+            editor.innerHTML = '';
+            // Initialize editor if not already done
+            if (!topicContentEditor) {
+              initTopicContentEditor();
+            } else {
+              // Re-initialize to get fresh reference
+              topicContentEditor = editor;
+            }
+            if (updatePlaceholder) {
+              updatePlaceholder();
+            }
+          }
+        } else {
+          console.error('Modal elements not found');
+        }
       });
       container.appendChild(addTopicBtn);
     }
@@ -325,6 +349,82 @@ const addTopicModal = document.getElementById('add-topic-modal');
 const addTopicForm = document.getElementById('add-topic-form');
 const closeTopicModal = document.getElementById('close-topic-modal');
 const cancelTopicBtn = document.getElementById('cancel-topic-btn');
+let topicContentEditor = null;
+let updatePlaceholder = null;
+
+// Initialize contenteditable editor
+function initTopicContentEditor() {
+  topicContentEditor = document.getElementById('topic-content-editor');
+  if (!topicContentEditor) return;
+  
+  // Show placeholder when empty
+  updatePlaceholder = function() {
+    if (topicContentEditor.innerHTML.trim() === '' || topicContentEditor.innerHTML === '<br>') {
+      topicContentEditor.setAttribute('data-placeholder-visible', 'true');
+      topicContentEditor.style.color = '#9ca3af';
+    } else {
+      topicContentEditor.setAttribute('data-placeholder-visible', 'false');
+      topicContentEditor.style.color = '#1e293b';
+    }
+  };
+  
+  // Handle paste events to preserve images
+    topicContentEditor.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const clipboardData = e.clipboardData || window.clipboardData;
+      
+      let html = clipboardData.getData('text/html');
+      let text = clipboardData.getData('text/plain');
+      
+      // If HTML is available, use it (preserves images)
+      if (html) {
+        const selection = window.getSelection();
+        if (selection.rangeCount) {
+          selection.deleteContents();
+          const range = selection.getRangeAt(0);
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = html;
+          const fragment = document.createDocumentFragment();
+          while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
+          }
+          range.insertNode(fragment);
+          selection.collapseToEnd();
+        }
+      } else if (text) {
+        // Fallback to plain text
+        document.execCommand('insertText', false, text);
+      }
+      
+      if (updatePlaceholder) {
+        updatePlaceholder();
+      }
+    });
+    
+    // Update placeholder on input
+    topicContentEditor.addEventListener('input', () => {
+      if (updatePlaceholder) updatePlaceholder();
+    });
+    topicContentEditor.addEventListener('focus', () => {
+      if (topicContentEditor.getAttribute('data-placeholder-visible') === 'true') {
+        topicContentEditor.innerHTML = '';
+        topicContentEditor.style.color = '#1e293b';
+      }
+    });
+    topicContentEditor.addEventListener('blur', () => {
+      if (updatePlaceholder) updatePlaceholder();
+    });
+    
+    // Initial placeholder
+    if (updatePlaceholder) {
+      updatePlaceholder();
+    }
+}
+
+// Initialize editor when page loads (if modal exists)
+if (document.getElementById('topic-content-editor')) {
+  initTopicContentEditor();
+}
 
 closeTopicModal.addEventListener('click', () => {
   addTopicModal.classList.add('hidden');
@@ -347,27 +447,57 @@ addTopicForm.addEventListener('submit', async (e) => {
   const submitBtn = addTopicForm.querySelector('button[type="submit"]');
   
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Adding...';
+  submitBtn.textContent = 'Adding & Enhancing...';
   errorDiv.classList.add('hidden');
   successDiv.classList.add('hidden');
   
   try {
     const moduleId = document.getElementById('topic-module-id').value;
     const title = document.getElementById('topic-title').value;
+    const contentEditor = document.getElementById('topic-content-editor');
+    const pastedContent = contentEditor ? contentEditor.innerHTML : '';
     
-    await api.createTopic(moduleId, title);
+    if (!title || !pastedContent || pastedContent.trim() === '' || pastedContent === '<br>') {
+      throw new Error('Topic title and content are required');
+    }
     
-    successDiv.textContent = 'Topic created successfully!';
+    // Step 1: Create the topic
+    const topic = await api.createTopic(moduleId, title);
+    
+    // Step 2: Enhance the pasted content (convert HTML to plain text for AI processing)
+    if (pastedContent && pastedContent.trim() !== '' && pastedContent !== '<br>') {
+      try {
+        // Convert HTML to plain text for AI processing (images will be described)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = pastedContent;
+        const plainText = tempDiv.textContent || tempDiv.innerText || '';
+        
+        await api.enhanceContent(topic._id, plainText);
+        successDiv.textContent = 'Topic created and content enhanced successfully!';
+      } catch (enhanceError) {
+        console.warn('Content enhancement failed:', enhanceError);
+        successDiv.textContent = 'Topic created successfully, but content enhancement failed. You can enhance it later from the topic page.';
+      }
+    } else {
+      successDiv.textContent = 'Topic created successfully!';
+    }
+    
     successDiv.classList.remove('hidden');
     addTopicModal.classList.add('hidden');
     addTopicForm.reset();
+    if (contentEditor) {
+      contentEditor.innerHTML = '';
+      if (topicContentEditor) {
+        updatePlaceholder();
+      }
+    }
     loadCourse(); // Reload to show new topic
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.classList.remove('hidden');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = 'Add Topic';
+    submitBtn.textContent = 'Add Topic & Enhance Content';
   }
 });
 

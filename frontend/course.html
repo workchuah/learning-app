@@ -84,7 +84,7 @@
 
   <!-- Add Topic Modal -->
   <div id="add-topic-modal" class="modal hidden">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 800px;">
       <div class="modal-header">
         <h2>Add New Topic</h2>
         <button class="modal-close" id="close-topic-modal">&times;</button>
@@ -95,9 +95,34 @@
           <label class="form-label" for="topic-title">Topic Title *</label>
           <input type="text" id="topic-title" class="form-input" required>
         </div>
+        <div class="form-group">
+          <label class="form-label" for="topic-content">Topic Content *</label>
+          <div style="position: relative;">
+            <div 
+              id="topic-content-editor" 
+              contenteditable="true" 
+              style="
+                min-height: 300px; 
+                max-height: 500px; 
+                overflow-y: auto;
+                padding: 12px;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                background: white;
+                font-family: inherit;
+                font-size: 14px;
+                line-height: 1.6;
+              "
+              placeholder="Paste your topic content here (text, images, etc.)..."
+            ></div>
+            <small style="color: #64748b; font-size: 12px; display: block; margin-top: 8px;">
+              💡 Tip: You can paste content with images directly here. Use Ctrl+V (or Cmd+V on Mac) to paste.
+            </small>
+          </div>
+        </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="cancel-topic-btn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Topic</button>
+          <button type="submit" class="btn btn-primary">Add Topic & Enhance Content</button>
         </div>
       </form>
     </div>

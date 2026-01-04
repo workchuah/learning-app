@@ -403,6 +403,19 @@ textarea.form-input {
   text-align: center;
 }
 
+/* Contenteditable Placeholder */
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+[contenteditable][data-placeholder-visible="true"]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header {
