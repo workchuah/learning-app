@@ -143,36 +143,70 @@ async function loadModuleTopics(moduleId, container) {
     // Add "Add Topic" button for manual courses
     if (course.course_type === 'manual') {
       const addTopicBtn = document.createElement('button');
+      addTopicBtn.type = 'button'; // Explicitly set type to prevent form submission
       addTopicBtn.className = 'btn btn-secondary';
       addTopicBtn.textContent = '➕ Add Topic';
       addTopicBtn.style.marginBottom = '16px';
+      addTopicBtn.style.cursor = 'pointer';
       addTopicBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        console.log('Add Topic button clicked, moduleId:', moduleId);
+        
         const moduleIdInput = document.getElementById('topic-module-id');
         const modal = document.getElementById('add-topic-modal');
-        if (moduleIdInput && modal) {
-          moduleIdInput.value = moduleId;
-          modal.classList.remove('hidden');
-          // Clear previous content
-          document.getElementById('topic-title').value = '';
-          const editor = document.getElementById('topic-content-editor');
-          if (editor) {
-            editor.innerHTML = '';
-            // Initialize editor if not already done
-            if (!topicContentEditor) {
-              initTopicContentEditor();
-            } else {
-              // Re-initialize to get fresh reference
-              topicContentEditor = editor;
-            }
-            if (updatePlaceholder) {
-              updatePlaceholder();
-            }
-          }
-        } else {
-          console.error('Modal elements not found');
+        
+        console.log('Modal elements:', { 
+          moduleIdInput: !!moduleIdInput, 
+          modal: !!modal,
+          modalClasses: modal ? modal.className : 'N/A'
+        });
+        
+        if (!moduleIdInput) {
+          console.error('topic-module-id input not found');
+          alert('Error: Topic module ID input not found. Please refresh the page.');
+          return;
         }
+        
+        if (!modal) {
+          console.error('add-topic-modal not found');
+          alert('Error: Add topic modal not found. Please refresh the page.');
+          return;
+        }
+        
+        moduleIdInput.value = moduleId;
+        
+        // Force remove hidden class and ensure modal is visible
+        // Since .hidden uses !important, we need to remove the class AND set display
+        modal.classList.remove('hidden');
+        modal.style.setProperty('display', 'flex', 'important'); // Force display with !important
+        console.log('Modal classes after removal:', modal.className);
+        console.log('Modal display style:', modal.style.display);
+        
+        // Clear previous content
+        const titleInput = document.getElementById('topic-title');
+        if (titleInput) {
+          titleInput.value = '';
+        }
+        
+        const editor = document.getElementById('topic-content-editor');
+        if (editor) {
+          editor.innerHTML = '';
+          // Initialize editor if not already done
+          if (!topicContentEditor) {
+            initTopicContentEditor();
+          } else {
+            // Re-initialize to get fresh reference
+            topicContentEditor = editor;
+          }
+          if (updatePlaceholder) {
+            updatePlaceholder();
+          }
+        }
+        
+        return false;
       });
       container.appendChild(addTopicBtn);
     }
