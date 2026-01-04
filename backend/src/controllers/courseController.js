@@ -64,14 +64,17 @@ exports.createCourse = async (req, res, next) => {
         const courseType = course_type || 'ai_generated';
         
         // Validate: AI-generated courses require goal
-        if (courseType === 'ai_generated' && !goal) {
+        if (courseType === 'ai_generated' && (!goal || goal.trim() === '')) {
           return res.status(400).json({ error: 'Course goal is required for AI-generated courses' });
         }
 
-        // For manual courses, goal is optional (can be empty string or undefined)
+        // For manual courses, goal is optional - always set to empty string
+        // For AI-generated courses, use the provided goal
+        const goalValue = (courseType === 'manual') ? '' : (goal || '');
+        
         const courseData = {
           title,
-          goal: goal || '', // Always set to empty string if not provided
+          goal: goalValue, // Always a string (empty for manual, provided value for AI-generated)
           course_type: courseType,
           target_timeline: '', // Will be estimated during structure generation
           outline_file: req.file ? req.file.filename : '',
@@ -79,6 +82,15 @@ exports.createCourse = async (req, res, next) => {
           created_by: req.user._id,
           status: 'draft',
         };
+
+        // Debug: Log the data being sent to Course.create
+        console.log('Creating course:', { 
+          title: courseData.title, 
+          goal: courseData.goal, 
+          goalType: typeof courseData.goal,
+          goalLength: courseData.goal.length,
+          course_type: courseData.course_type 
+        });
 
         const course = await Course.create(courseData);
 
