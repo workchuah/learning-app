@@ -200,10 +200,14 @@ exports.enhanceContent = async (req, res, next) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const { pasted_content } = req.body;
+    const { rawContent } = req.body;
     
-    if (!pasted_content) {
-      return res.status(400).json({ error: 'Pasted content is required' });
+    if (!rawContent || rawContent.trim() === '') {
+      return res.status(400).json({ error: 'Raw content is required for enhancement.' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'Content enhancement is only for manual courses.' });
     }
 
     topic.status = 'generating';
@@ -215,10 +219,11 @@ exports.enhanceContent = async (req, res, next) => {
       const provider = apiKeys.provider || 'openai';
       const model = provider === 'openai' ? user.openai_model : user.gemini_model;
 
+      const courseContext = `${course.title}: ${course.goal || ''}`;
       const enhancedContent = await enhanceContent(
+        rawContent,
+        courseContext,
         topic.title,
-        course.title,
-        pasted_content,
         provider,
         model,
         apiKeys.api_key || null
@@ -328,6 +333,68 @@ exports.generateMCQOnly = async (req, res, next) => {
     } catch (error) {
       next(error);
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update topic (for manual courses only)
+exports.updateTopic = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id);
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'Topics can only be edited in manual courses.' });
+    }
+
+    const { title } = req.body;
+    
+    if (title !== undefined) {
+      if (!title || title.trim() === '') {
+        return res.status(400).json({ error: 'Topic title is required' });
+      }
+      topic.title = title.trim();
+    }
+
+    await topic.save();
+    res.json(topic);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete topic (for manual courses only)
+exports.deleteTopic = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id);
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'Topics can only be deleted in manual courses.' });
+    }
+
+    // Delete progress for this topic
+    await require('../models/Progress').deleteMany({ topic_id: topic._id });
+
+    // Delete the topic
+    await Topic.findByIdAndDelete(topic._id);
+
+    res.json({ message: 'Topic deleted successfully' });
   } catch (error) {
     next(error);
   }

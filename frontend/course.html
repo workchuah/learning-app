@@ -128,6 +128,52 @@
     </div>
   </div>
 
+  <!-- Edit Module Modal -->
+  <div id="edit-module-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Module</h2>
+        <button class="modal-close" id="close-edit-module-modal">&times;</button>
+      </div>
+      <form id="edit-module-form">
+        <input type="hidden" id="edit-module-id">
+        <div class="form-group">
+          <label class="form-label" for="edit-module-title">Module Title *</label>
+          <input type="text" id="edit-module-title" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit-module-description">Description (Optional)</label>
+          <textarea id="edit-module-description" class="form-input" rows="3"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-module-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Topic Modal -->
+  <div id="edit-topic-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Topic</h2>
+        <button class="modal-close" id="close-edit-topic-modal">&times;</button>
+      </div>
+      <form id="edit-topic-form">
+        <input type="hidden" id="edit-topic-id">
+        <div class="form-group">
+          <label class="form-label" for="edit-topic-title">Topic Title *</label>
+          <input type="text" id="edit-topic-title" class="form-input" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-edit-topic-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/config.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/auth.js"></script>

@@ -294,6 +294,10 @@ exports.createModule = async (req, res, next) => {
       return res.status(404).json({ error: 'Course not found' });
     }
 
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'Modules can only be manually added to manual courses.' });
+    }
+
     const { title, description } = req.body;
     
     if (!title) {
@@ -316,6 +320,74 @@ exports.createModule = async (req, res, next) => {
     });
 
     res.status(201).json(module);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update module (for manual courses only)
+exports.updateModule = async (req, res, next) => {
+  try {
+    const module = await Module.findById(req.params.moduleId);
+    if (!module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    const course = await Course.findById(module.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'Modules can only be edited in manual courses.' });
+    }
+
+    const { title, description } = req.body;
+    
+    if (title !== undefined) {
+      if (!title || title.trim() === '') {
+        return res.status(400).json({ error: 'Module title is required' });
+      }
+      module.title = title.trim();
+    }
+    
+    if (description !== undefined) {
+      module.description = description || '';
+    }
+
+    await module.save();
+    res.json(module);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete module (for manual courses only)
+exports.deleteModule = async (req, res, next) => {
+  try {
+    const module = await Module.findById(req.params.moduleId);
+    if (!module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    const course = await Course.findById(module.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'Modules can only be deleted in manual courses.' });
+    }
+
+    // Delete all topics in this module
+    await Topic.deleteMany({ module_id: module._id });
+    // Delete progress for this module
+    await require('../models/Progress').deleteMany({ module_id: module._id });
+
+    // Delete the module
+    await Module.findByIdAndDelete(module._id);
+
+    res.json({ message: 'Module deleted successfully' });
   } catch (error) {
     next(error);
   }

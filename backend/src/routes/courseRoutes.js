@@ -11,6 +11,8 @@ router.get('/', courseController.getCourses);
 router.get('/:id', courseController.getCourse);
 router.post('/:id/generate-structure', courseController.generateCourseStructure);
 router.post('/:id/modules', courseController.createModule); // Manual module creation
+router.put('/:id/modules/:moduleId', courseController.updateModule); // Update module
+router.delete('/:id/modules/:moduleId', courseController.deleteModule); // Delete module
 router.delete('/:id', courseController.deleteCourse);
 
 module.exports = router;

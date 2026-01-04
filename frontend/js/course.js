@@ -99,15 +99,59 @@ function renderModules() {
     };
     const diffInfo = difficultyLabels[difficulty] || difficultyLabels['beginner'];
     
-    moduleHeader.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <h3 style="margin: 0;">${module.title}</h3>
-        <span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; background: ${diffInfo.bg}; color: ${diffInfo.color};">
-          ${diffInfo.label}
-        </span>
-      </div>
-      <span style="color: #64748b;">▼</span>
-    `;
+    // Create module header with edit/delete buttons for manual courses
+    const headerLeft = document.createElement('div');
+    headerLeft.style.display = 'flex';
+    headerLeft.style.alignItems = 'center';
+    headerLeft.style.gap = '12px';
+    headerLeft.style.flex = '1';
+    
+    const titleH3 = document.createElement('h3');
+    titleH3.style.margin = '0';
+    titleH3.textContent = module.title;
+    headerLeft.appendChild(titleH3);
+    
+    const diffBadge = document.createElement('span');
+    diffBadge.style.padding = '4px 12px';
+    diffBadge.style.borderRadius = '12px';
+    diffBadge.style.fontSize = '12px';
+    diffBadge.style.fontWeight = '600';
+    diffBadge.style.background = diffInfo.bg;
+    diffBadge.style.color = diffInfo.color;
+    diffBadge.textContent = diffInfo.label;
+    headerLeft.appendChild(diffBadge);
+    
+    // Add edit/delete buttons for manual courses
+    if (course.course_type === 'manual') {
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-secondary';
+      editBtn.style.padding = '4px 8px';
+      editBtn.style.fontSize = '12px';
+      editBtn.textContent = '✏️ Edit';
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModuleModal(module);
+      });
+      headerLeft.appendChild(editBtn);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'btn btn-danger';
+      deleteBtn.style.padding = '4px 8px';
+      deleteBtn.style.fontSize = '12px';
+      deleteBtn.textContent = '🗑️ Delete';
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteModule(module);
+      });
+      headerLeft.appendChild(deleteBtn);
+    }
+    
+    const headerRight = document.createElement('span');
+    headerRight.style.color = '#64748b';
+    headerRight.textContent = '▼';
+    
+    moduleHeader.appendChild(headerLeft);
+    moduleHeader.appendChild(headerRight);
     
     const moduleContent = document.createElement('div');
     moduleContent.className = 'module-content';
@@ -119,10 +163,14 @@ function renderModules() {
     // Load topics for this module
     loadModuleTopics(module._id, moduleContent);
     
-    moduleHeader.addEventListener('click', () => {
+    moduleHeader.addEventListener('click', (e) => {
+      // Don't toggle if clicking on edit/delete buttons
+      if (e.target.closest('button')) {
+        return;
+      }
       const isHidden = moduleContent.style.display === 'none';
       moduleContent.style.display = isHidden ? 'block' : 'none';
-      moduleHeader.querySelector('span').textContent = isHidden ? '▲' : '▼';
+      headerRight.textContent = isHidden ? '▲' : '▼';
     });
     
     moduleCard.appendChild(moduleHeader);
@@ -299,6 +347,42 @@ async function loadModuleTopics(moduleId, container) {
         badge.style.fontWeight = '600';
         badge.style.marginLeft = '8px';
         linkContent.appendChild(badge);
+      }
+      
+      // Add edit/delete buttons for manual courses
+      if (course.course_type === 'manual') {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.display = 'flex';
+        actionsDiv.style.gap = '8px';
+        actionsDiv.style.marginLeft = 'auto';
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-secondary';
+        editBtn.style.padding = '4px 8px';
+        editBtn.style.fontSize = '11px';
+        editBtn.textContent = '✏️';
+        editBtn.title = 'Edit Topic';
+        editBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openEditTopicModal(topic);
+        });
+        actionsDiv.appendChild(editBtn);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.style.padding = '4px 8px';
+        deleteBtn.style.fontSize = '11px';
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.title = 'Delete Topic';
+        deleteBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          deleteTopic(topic);
+        });
+        actionsDiv.appendChild(deleteBtn);
+        
+        linkContent.appendChild(actionsDiv);
       }
       
       topicLink.appendChild(linkContent);
@@ -695,6 +779,181 @@ document.addEventListener('click', function(e) {
     }
   }
 }, true); // Use capture phase
+
+// Edit Module functions
+function openEditModuleModal(module) {
+  const modal = document.getElementById('edit-module-modal');
+  const form = document.getElementById('edit-module-form');
+  const moduleIdInput = document.getElementById('edit-module-id');
+  const titleInput = document.getElementById('edit-module-title');
+  const descriptionInput = document.getElementById('edit-module-description');
+  
+  moduleIdInput.value = module._id;
+  titleInput.value = module.title || '';
+  descriptionInput.value = module.description || '';
+  
+  modal.classList.remove('hidden');
+}
+
+function openEditTopicModal(topic) {
+  const modal = document.getElementById('edit-topic-modal');
+  const form = document.getElementById('edit-topic-form');
+  const topicIdInput = document.getElementById('edit-topic-id');
+  const titleInput = document.getElementById('edit-topic-title');
+  
+  topicIdInput.value = topic._id;
+  titleInput.value = topic.title || '';
+  
+  modal.classList.remove('hidden');
+}
+
+async function deleteModule(module) {
+  const confirmed = confirm(
+    `Are you sure you want to delete the module "${module.title}"?\n\n` +
+    '⚠️ Warning: This will also delete all topics in this module and cannot be undone.\n\n' +
+    'Click OK to delete or Cancel to abort.'
+  );
+  
+  if (!confirmed) return;
+  
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  
+  try {
+    await api.deleteModule(courseId, module._id);
+    successDiv.textContent = 'Module deleted successfully!';
+    successDiv.classList.remove('hidden');
+    loadCourse(); // Reload to refresh the list
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+  }
+}
+
+async function deleteTopic(topic) {
+  const confirmed = confirm(
+    `Are you sure you want to delete the topic "${topic.title}"?\n\n` +
+    '⚠️ Warning: This action cannot be undone.\n\n' +
+    'Click OK to delete or Cancel to abort.'
+  );
+  
+  if (!confirmed) return;
+  
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  
+  try {
+    await api.deleteTopic(topic._id);
+    successDiv.textContent = 'Topic deleted successfully!';
+    successDiv.classList.remove('hidden');
+    loadCourse(); // Reload to refresh the list
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+  }
+}
+
+// Edit Module Modal handlers
+const editModuleModal = document.getElementById('edit-module-modal');
+const editModuleForm = document.getElementById('edit-module-form');
+const closeEditModuleModal = document.getElementById('close-edit-module-modal');
+const cancelEditModuleBtn = document.getElementById('cancel-edit-module-btn');
+
+closeEditModuleModal.addEventListener('click', () => {
+  editModuleModal.classList.add('hidden');
+});
+
+cancelEditModuleBtn.addEventListener('click', () => {
+  editModuleModal.classList.add('hidden');
+});
+
+editModuleForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  const submitBtn = editModuleForm.querySelector('button[type="submit"]');
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  
+  try {
+    const moduleId = document.getElementById('edit-module-id').value;
+    const title = document.getElementById('edit-module-title').value;
+    const description = document.getElementById('edit-module-description').value;
+    
+    await api.updateModule(courseId, moduleId, title, description);
+    
+    successDiv.textContent = 'Module updated successfully!';
+    successDiv.classList.remove('hidden');
+    editModuleModal.classList.add('hidden');
+    loadCourse(); // Reload to show updated module
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save Changes';
+  }
+});
+
+// Edit Topic Modal handlers
+const editTopicModal = document.getElementById('edit-topic-modal');
+const editTopicForm = document.getElementById('edit-topic-form');
+const closeEditTopicModal = document.getElementById('close-edit-topic-modal');
+const cancelEditTopicBtn = document.getElementById('cancel-edit-topic-btn');
+
+closeEditTopicModal.addEventListener('click', () => {
+  editTopicModal.classList.add('hidden');
+});
+
+cancelEditTopicBtn.addEventListener('click', () => {
+  editTopicModal.classList.add('hidden');
+});
+
+editTopicForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  const submitBtn = editTopicForm.querySelector('button[type="submit"]');
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  
+  try {
+    const topicId = document.getElementById('edit-topic-id').value;
+    const title = document.getElementById('edit-topic-title').value;
+    
+    await api.updateTopic(topicId, title);
+    
+    successDiv.textContent = 'Topic updated successfully!';
+    successDiv.classList.remove('hidden');
+    editTopicModal.classList.add('hidden');
+    loadCourse(); // Reload to show updated topic
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save Changes';
+  }
+});
+
+// Close modals when clicking outside
+editModuleModal.addEventListener('click', (e) => {
+  if (e.target === editModuleModal) {
+    editModuleModal.classList.add('hidden');
+  }
+});
+
+editTopicModal.addEventListener('click', (e) => {
+  if (e.target === editTopicModal) {
+    editTopicModal.classList.add('hidden');
+  }
+});
 
 // Load course on page load
 loadCourse();
