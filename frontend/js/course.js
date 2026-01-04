@@ -431,6 +431,38 @@ const cancelTopicBtn = document.getElementById('cancel-topic-btn');
 let topicContentEditor = null;
 let updatePlaceholder = null;
 
+// Helper function to insert text at cursor position
+function insertTextAtCursor(editor, text) {
+  try {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      const textNode = document.createTextNode(text);
+      range.insertNode(textNode);
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      // No selection, append text
+      const textNode = document.createTextNode(text);
+      editor.appendChild(textNode);
+    }
+  } catch (error) {
+    console.error('Error inserting text:', error);
+    // Last resort: use deprecated execCommand
+    try {
+      editor.focus();
+      document.execCommand('insertText', false, text);
+    } catch (execError) {
+      console.error('execCommand also failed:', execError);
+      // Final fallback: just append to innerHTML
+      editor.innerHTML += text;
+    }
+  }
+}
+
 // Initialize contenteditable editor
 function initTopicContentEditor() {
   topicContentEditor = document.getElementById('topic-content-editor');
@@ -448,37 +480,71 @@ function initTopicContentEditor() {
   };
   
   // Handle paste events to preserve images
-    topicContentEditor.addEventListener('paste', (e) => {
-      e.preventDefault();
+  topicContentEditor.addEventListener('paste', (e) => {
+    try {
       const clipboardData = e.clipboardData || window.clipboardData;
+      
+      if (!clipboardData) {
+        console.warn('Clipboard data not available, allowing default paste');
+        // Don't prevent default - allow browser's default paste behavior
+        return;
+      }
+      
+      // Only prevent default if we have clipboard data to handle
+      e.preventDefault();
       
       let html = clipboardData.getData('text/html');
       let text = clipboardData.getData('text/plain');
       
       // If HTML is available, use it (preserves images)
-      if (html) {
-        const selection = window.getSelection();
-        if (selection.rangeCount) {
-          selection.deleteContents();
-          const range = selection.getRangeAt(0);
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = html;
-          const fragment = document.createDocumentFragment();
-          while (tempDiv.firstChild) {
-            fragment.appendChild(tempDiv.firstChild);
+      if (html && html.trim()) {
+        try {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            selection.deleteContents();
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            const fragment = document.createDocumentFragment();
+            while (tempDiv.firstChild) {
+              fragment.appendChild(tempDiv.firstChild);
+            }
+            
+            range.insertNode(fragment);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            range.collapse(false);
+          } else {
+            // No selection, append to end
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            while (tempDiv.firstChild) {
+              topicContentEditor.appendChild(tempDiv.firstChild);
+            }
           }
-          range.insertNode(fragment);
-          selection.collapseToEnd();
+        } catch (htmlError) {
+          console.error('Error inserting HTML:', htmlError);
+          // Fallback to text if HTML insertion fails
+          if (text) {
+            insertTextAtCursor(topicContentEditor, text);
+          }
         }
-      } else if (text) {
+      } else if (text && text.trim()) {
         // Fallback to plain text
-        document.execCommand('insertText', false, text);
+        insertTextAtCursor(topicContentEditor, text);
       }
       
       if (updatePlaceholder) {
         updatePlaceholder();
       }
-    });
+    } catch (error) {
+      console.error('Paste error:', error);
+      // Allow default paste behavior as last resort
+      // Don't prevent default if we can't handle it
+    }
+  });
     
     // Update placeholder on input
     topicContentEditor.addEventListener('input', () => {
