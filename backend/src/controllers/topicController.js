@@ -143,3 +143,193 @@ exports.updatePracticalTask = async (req, res, next) => {
   }
 };
 
+// Manual topic creation (for manual courses)
+exports.createTopic = async (req, res, next) => {
+  try {
+    const { module_id, title } = req.body;
+    
+    if (!module_id || !title) {
+      return res.status(400).json({ error: 'Module ID and topic title are required' });
+    }
+
+    const module = await Module.findById(module_id);
+    if (!module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    // Verify course ownership
+    const course = await Course.findById(module.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get the highest order number for this module
+    const maxOrder = await Topic.findOne({ module_id })
+      .sort({ order: -1 })
+      .select('order');
+    
+    const order = maxOrder ? maxOrder.order + 1 : 1;
+
+    const topic = await Topic.create({
+      module_id,
+      course_id: module.course_id,
+      title,
+      order,
+      status: 'pending',
+    });
+
+    res.status(201).json(topic);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Enhance pasted content (for manual courses)
+exports.enhanceContent = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id)
+      .populate('course_id', 'title');
+    
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    // Verify course ownership
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { pasted_content } = req.body;
+    
+    if (!pasted_content) {
+      return res.status(400).json({ error: 'Pasted content is required' });
+    }
+
+    topic.status = 'generating';
+    await topic.save();
+
+    try {
+      const user = await require('../models/User').findById(req.user._id);
+      const apiKeys = user.api_keys?.content_generation_agent || {};
+      const provider = apiKeys.provider || 'openai';
+      const model = provider === 'openai' ? user.openai_model : user.gemini_model;
+
+      const enhancedContent = await enhanceContent(
+        topic.title,
+        course.title,
+        pasted_content,
+        provider,
+        model,
+        apiKeys.api_key || null
+      );
+
+      topic.lecture_notes = enhancedContent;
+      topic.status = 'ready';
+      await topic.save();
+
+      res.json({ message: 'Content enhanced successfully', topic });
+    } catch (error) {
+      topic.status = 'pending';
+      await topic.save();
+      throw error;
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Generate only tutorial exercises (10 exercises for manual courses)
+exports.generateTutorialExercisesOnly = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id)
+      .populate('course_id', 'title goal');
+    
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    // Verify course ownership
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (!topic.lecture_notes) {
+      return res.status(400).json({ error: 'Topic must have lecture notes before generating exercises' });
+    }
+
+    try {
+      const user = await require('../models/User').findById(req.user._id);
+      const apiKeys = user.api_keys?.tutorial_exercise_agent || {};
+      const provider = apiKeys.provider || 'openai';
+      const model = provider === 'openai' ? user.openai_model : user.gemini_model;
+
+      const exercises = await generateTutorialExercisesManual(
+        topic.title,
+        `${course.title}: ${course.goal || ''}`,
+        topic.lecture_notes,
+        provider,
+        model,
+        apiKeys.api_key || null
+      );
+
+      topic.tutorial_exercises = exercises;
+      await topic.save();
+
+      res.json({ message: 'Tutorial exercises generated successfully', exercises });
+    } catch (error) {
+      next(error);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Generate only MCQ questions (15 questions for manual courses)
+exports.generateMCQOnly = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id)
+      .populate('course_id', 'title goal');
+    
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    // Verify course ownership
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (!topic.lecture_notes) {
+      return res.status(400).json({ error: 'Topic must have lecture notes before generating MCQ' });
+    }
+
+    try {
+      const user = await require('../models/User').findById(req.user._id);
+      const apiKeys = user.api_keys?.quiz_agent || {};
+      const provider = apiKeys.provider || 'openai';
+      const model = provider === 'openai' ? user.openai_model : user.gemini_model;
+
+      const quiz = await generateMCQManual(
+        topic.title,
+        `${course.title}: ${course.goal || ''}`,
+        topic.lecture_notes,
+        provider,
+        model,
+        apiKeys.api_key || null
+      );
+
+      topic.quiz = quiz;
+      await topic.save();
+
+      res.json({ message: 'MCQ questions generated successfully', quiz });
+    } catch (error) {
+      next(error);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
