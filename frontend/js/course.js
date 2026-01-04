@@ -31,21 +31,31 @@ async function loadCourse() {
     
     // Update UI
     document.getElementById('course-title').textContent = course.title;
-    document.getElementById('course-goal').textContent = course.goal;
-    document.getElementById('course-timeline').textContent = course.target_timeline || 'To be estimated after structure generation';
+    document.getElementById('course-goal').textContent = course.goal || 'Manual Course - No goal required';
+    document.getElementById('course-timeline').textContent = course.target_timeline || (course.course_type === 'manual' ? 'Manual Course' : 'To be estimated after structure generation');
     
     const progress = course.progress_percentage || 0;
     document.getElementById('progress-fill').style.width = `${progress}%`;
     document.getElementById('progress-text').textContent = `${progress}%`;
     
-    // Show/hide generate button
+    // Show/hide buttons based on course type
     const generateBtn = document.getElementById('generate-structure-btn');
-    if (course.status === 'draft' || course.status === 'generating') {
-      generateBtn.style.display = 'inline-block';
-      generateBtn.textContent = course.status === 'generating' ? 'Generating...' : 'Generate Course Structure';
-      generateBtn.disabled = course.status === 'generating';
-    } else {
+    const addModuleBtn = document.getElementById('add-module-btn');
+    
+    if (course.course_type === 'manual') {
+      // Manual course: Show "Add Module" button, hide "Generate Structure" button
       generateBtn.style.display = 'none';
+      addModuleBtn.style.display = 'inline-block';
+    } else {
+      // AI-generated course: Show "Generate Structure" button, hide "Add Module" button
+      addModuleBtn.style.display = 'none';
+      if (course.status === 'draft' || course.status === 'generating') {
+        generateBtn.style.display = 'inline-block';
+        generateBtn.textContent = course.status === 'generating' ? 'Generating...' : 'Generate Course Structure';
+        generateBtn.disabled = course.status === 'generating';
+      } else {
+        generateBtn.style.display = 'none';
+      }
     }
     
     // Render modules
@@ -130,9 +140,25 @@ async function loadModuleTopics(moduleId, container) {
     });
     moduleTopics.sort((a, b) => (a.order || 0) - (b.order || 0));
     
+    // Add "Add Topic" button for manual courses
+    if (course.course_type === 'manual') {
+      const addTopicBtn = document.createElement('button');
+      addTopicBtn.className = 'btn btn-secondary';
+      addTopicBtn.textContent = '➕ Add Topic';
+      addTopicBtn.style.marginBottom = '16px';
+      addTopicBtn.addEventListener('click', () => {
+        document.getElementById('topic-module-id').value = moduleId;
+        document.getElementById('add-topic-modal').classList.remove('hidden');
+      });
+      container.appendChild(addTopicBtn);
+    }
+    
     if (moduleTopics.length === 0) {
-      container.innerHTML = '<p style="color: #64748b;">No topics in this module yet.</p>';
-      return;
+      const emptyMsg = course.course_type === 'manual'
+        ? '<p style="color: #64748b;">No topics in this module yet. Click "Add Topic" above to add one.</p>'
+        : '<p style="color: #64748b;">No topics in this module yet.</p>';
+      container.innerHTML += emptyMsg;
+      if (course.course_type !== 'manual') return;
     }
     
     const topicsList = document.createElement('div');
@@ -236,6 +262,112 @@ document.getElementById('delete-course-btn').addEventListener('click', async () 
   } catch (error) {
     document.getElementById('error-message').textContent = error.message;
     document.getElementById('error-message').classList.remove('hidden');
+  }
+});
+
+// Add Module Modal handlers
+const addModuleModal = document.getElementById('add-module-modal');
+const addModuleForm = document.getElementById('add-module-form');
+const closeModuleModal = document.getElementById('close-module-modal');
+const cancelModuleBtn = document.getElementById('cancel-module-btn');
+
+document.getElementById('add-module-btn').addEventListener('click', () => {
+  addModuleModal.classList.remove('hidden');
+});
+
+closeModuleModal.addEventListener('click', () => {
+  addModuleModal.classList.add('hidden');
+});
+
+cancelModuleBtn.addEventListener('click', () => {
+  addModuleModal.classList.add('hidden');
+});
+
+addModuleModal.addEventListener('click', (e) => {
+  if (e.target === addModuleModal) {
+    addModuleModal.classList.add('hidden');
+  }
+});
+
+addModuleForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  const submitBtn = addModuleForm.querySelector('button[type="submit"]');
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Adding...';
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  
+  try {
+    const title = document.getElementById('module-title').value;
+    const description = document.getElementById('module-description').value;
+    
+    await api.createModule(courseId, title, description);
+    
+    successDiv.textContent = 'Module created successfully!';
+    successDiv.classList.remove('hidden');
+    addModuleModal.classList.add('hidden');
+    addModuleForm.reset();
+    loadCourse(); // Reload to show new module
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Add Module';
+  }
+});
+
+// Add Topic Modal handlers
+const addTopicModal = document.getElementById('add-topic-modal');
+const addTopicForm = document.getElementById('add-topic-form');
+const closeTopicModal = document.getElementById('close-topic-modal');
+const cancelTopicBtn = document.getElementById('cancel-topic-btn');
+
+closeTopicModal.addEventListener('click', () => {
+  addTopicModal.classList.add('hidden');
+});
+
+cancelTopicBtn.addEventListener('click', () => {
+  addTopicModal.classList.add('hidden');
+});
+
+addTopicModal.addEventListener('click', (e) => {
+  if (e.target === addTopicModal) {
+    addTopicModal.classList.add('hidden');
+  }
+});
+
+addTopicForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  const submitBtn = addTopicForm.querySelector('button[type="submit"]');
+  
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Adding...';
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  
+  try {
+    const moduleId = document.getElementById('topic-module-id').value;
+    const title = document.getElementById('topic-title').value;
+    
+    await api.createTopic(moduleId, title);
+    
+    successDiv.textContent = 'Topic created successfully!';
+    successDiv.classList.remove('hidden');
+    addTopicModal.classList.add('hidden');
+    addTopicForm.reset();
+    loadCourse(); // Reload to show new topic
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Add Topic';
   }
 });
 

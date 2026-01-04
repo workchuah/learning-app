@@ -162,6 +162,43 @@ const api = {
     return await response.json();
   },
 
+  // Manual course structure creation
+  createModule: async (courseId, title, description) => {
+    const response = await fetch(`${API_BASE_URL}/courses/${courseId}/modules`, {
+      method: 'POST',
+      headers: {
+        ...api.getHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, description: description || '' }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create module');
+    }
+    
+    return await response.json();
+  },
+
+  createTopic: async (moduleId, title) => {
+    const response = await fetch(`${API_BASE_URL}/topics/`, {
+      method: 'POST',
+      headers: {
+        ...api.getHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ module_id: moduleId, title }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create topic');
+    }
+    
+    return await response.json();
+  },
+
   // Topic API
   getTopic: async (id) => {
     const response = await fetch(`${API_BASE_URL}/topics/${id}`, {

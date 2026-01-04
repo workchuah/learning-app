@@ -43,6 +43,7 @@
         </div>
         <div style="margin-top: 20px;">
           <button class="btn btn-primary" id="generate-structure-btn" style="display: none;">Generate Course Structure</button>
+          <button class="btn btn-primary" id="add-module-btn" style="display: none; margin-left: 12px;">➕ Add Module</button>
           <button class="btn btn-danger" id="delete-course-btn" style="margin-left: 12px;">Delete Course</button>
         </div>
       </div>
@@ -54,7 +55,53 @@
     </div>
 
     <div id="error-message" class="alert alert-error hidden"></div>
+    <div id="success-message" class="alert alert-success hidden"></div>
   </main>
+
+  <!-- Add Module Modal -->
+  <div id="add-module-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Module</h2>
+        <button class="modal-close" id="close-module-modal">&times;</button>
+      </div>
+      <form id="add-module-form">
+        <div class="form-group">
+          <label class="form-label" for="module-title">Module Title *</label>
+          <input type="text" id="module-title" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="module-description">Description (Optional)</label>
+          <textarea id="module-description" class="form-input" rows="3"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-module-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Module</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Topic Modal -->
+  <div id="add-topic-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Topic</h2>
+        <button class="modal-close" id="close-topic-modal">&times;</button>
+      </div>
+      <form id="add-topic-form">
+        <input type="hidden" id="topic-module-id">
+        <div class="form-group">
+          <label class="form-label" for="topic-title">Topic Title *</label>
+          <input type="text" id="topic-title" class="form-input" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-topic-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Topic</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="js/config.js"></script>
   <script src="js/storage.js"></script>
