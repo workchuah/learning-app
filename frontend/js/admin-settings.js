@@ -16,7 +16,7 @@ async function loadSettings() {
     agentConfiguredStatus = {};
     
     // Initialize defaults for all agents
-    ['cs', 'cg', 'te', 'pt', 'qz', 'ab'].forEach(prefix => {
+    ['cs', 'cg', 'te', 'pt', 'qz', 'ab', 'fd', 'ex', 'mte', 'mmcq'].forEach(prefix => {
       originalProviders[prefix] = 'openai';
       agentConfiguredStatus[prefix] = false;
     });
@@ -35,6 +35,11 @@ async function loadSettings() {
       updateAgentUI('qz', settings.api_keys.quiz_agent);
       // Audiobook Agent
       updateAgentUI('ab', settings.api_keys.audiobook_agent);
+      // Manual course agents
+      updateAgentUI('fd', settings.api_keys.format_display_agent);
+      updateAgentUI('ex', settings.api_keys.explanation_agent);
+      updateAgentUI('mte', settings.api_keys.manual_tutorial_exercises_agent);
+      updateAgentUI('mmcq', settings.api_keys.manual_mcq_agent);
     }
     
     // Keys are now loaded into input fields (masked as password type)
@@ -167,6 +172,11 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     addAgentIfHasValue('practical_task_agent', 'pt');
     addAgentIfHasValue('quiz_agent', 'qz');
     addAgentIfHasValue('audiobook_agent', 'ab');
+    // Manual course agents
+    addAgentIfHasValue('format_display_agent', 'fd');
+    addAgentIfHasValue('explanation_agent', 'ex');
+    addAgentIfHasValue('manual_tutorial_exercises_agent', 'mte');
+    addAgentIfHasValue('manual_mcq_agent', 'mmcq');
     
     // Only send if there are keys to update
     if (Object.keys(apiKeys).length === 0) {
@@ -192,7 +202,11 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
         'tutorial_exercise_agent': 'te',
         'practical_task_agent': 'pt',
         'quiz_agent': 'qz',
-        'audiobook_agent': 'ab'
+        'audiobook_agent': 'ab',
+        'format_display_agent': 'fd',
+        'explanation_agent': 'ex',
+        'manual_tutorial_exercises_agent': 'mte',
+        'manual_mcq_agent': 'mmcq',
       };
       const prefix = prefixMap[agentName];
       if (prefix) {

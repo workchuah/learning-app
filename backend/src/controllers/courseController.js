@@ -54,7 +54,7 @@ exports.createCourse = async (req, res, next) => {
       }
 
       try {
-        const { title, goal } = req.body;
+        const { title, goal, course_type } = req.body;
         let outlineText = '';
 
         if (req.file) {
@@ -64,6 +64,7 @@ exports.createCourse = async (req, res, next) => {
         const course = await Course.create({
           title,
           goal,
+          course_type: course_type || 'ai_generated',
           target_timeline: '', // Will be estimated during structure generation
           outline_file: req.file ? req.file.filename : '',
           outline_text: outlineText,
@@ -258,6 +259,145 @@ exports.deleteCourse = async (req, res, next) => {
 
     await Course.findByIdAndDelete(req.params.id);
     res.json({ message: 'Course deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Manual course module/topic management
+exports.createModule = async (req, res, next) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'This endpoint is only for manual courses' });
+    }
+
+    const { title, description } = req.body;
+    
+    // Get max order for this course
+    const maxOrder = await Module.findOne({ course_id: course._id }).sort({ order: -1 });
+    const order = maxOrder ? maxOrder.order + 1 : 1;
+
+    const module = await Module.create({
+      course_id: course._id,
+      title,
+      description: description || '',
+      difficulty_level: 'beginner', // Default for manual courses
+      order,
+    });
+
+    res.status(201).json(module);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateModule = async (req, res, next) => {
+  try {
+    const { moduleId } = req.params;
+    const module = await Module.findById(moduleId).populate('course_id');
+    
+    if (!module || module.course_id.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    const { title, description } = req.body;
+    if (title) module.title = title;
+    if (description !== undefined) module.description = description;
+    
+    await module.save();
+    res.json(module);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteModule = async (req, res, next) => {
+  try {
+    const { moduleId } = req.params;
+    const module = await Module.findById(moduleId).populate('course_id');
+    
+    if (!module || module.course_id.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    // Delete all topics in this module
+    await Topic.deleteMany({ module_id: module._id });
+    await Module.findByIdAndDelete(moduleId);
+
+    res.json({ message: 'Module deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createTopic = async (req, res, next) => {
+  try {
+    const { moduleId } = req.params;
+    const module = await Module.findById(moduleId).populate('course_id');
+    
+    if (!module || module.course_id.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    if (module.course_id.course_type !== 'manual') {
+      return res.status(400).json({ error: 'This endpoint is only for manual courses' });
+    }
+
+    const { title } = req.body;
+    
+    // Get max order for this module
+    const maxOrder = await Topic.findOne({ module_id: module._id }).sort({ order: -1 });
+    const order = maxOrder ? maxOrder.order + 1 : 1;
+
+    const topic = await Topic.create({
+      module_id: module._id,
+      course_id: module.course_id._id,
+      title,
+      order,
+      status: 'pending',
+    });
+
+    res.status(201).json(topic);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateTopic = async (req, res, next) => {
+  try {
+    const { topicId } = req.params;
+    const topic = await Topic.findById(topicId).populate('course_id');
+    
+    if (!topic || topic.course_id.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    const { title } = req.body;
+    if (title) topic.title = title;
+    
+    await topic.save();
+    res.json(topic);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteTopic = async (req, res, next) => {
+  try {
+    const { topicId } = req.params;
+    const topic = await Topic.findById(topicId).populate('course_id');
+    
+    if (!topic || topic.course_id.created_by.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    await Topic.findByIdAndDelete(topicId);
+    res.json({ message: 'Topic deleted successfully' });
   } catch (error) {
     next(error);
   }

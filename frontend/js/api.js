@@ -162,6 +162,95 @@ const api = {
     return await response.json();
   },
 
+  // Manual course module/topic API
+  createModule: async (courseId, title, description = '') => {
+    const response = await fetch(`${API_BASE_URL}/courses/${courseId}/modules`, {
+      method: 'POST',
+      headers: api.getHeaders(),
+      body: JSON.stringify({ title, description }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create module');
+    }
+    
+    return await response.json();
+  },
+
+  updateModule: async (moduleId, title, description = '') => {
+    const response = await fetch(`${API_BASE_URL}/courses/modules/${moduleId}`, {
+      method: 'PATCH',
+      headers: api.getHeaders(),
+      body: JSON.stringify({ title, description }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update module');
+    }
+    
+    return await response.json();
+  },
+
+  deleteModule: async (moduleId) => {
+    const response = await fetch(`${API_BASE_URL}/courses/modules/${moduleId}`, {
+      method: 'DELETE',
+      headers: api.getHeaders(),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete module');
+    }
+    
+    return await response.json();
+  },
+
+  createTopic: async (moduleId, title) => {
+    const response = await fetch(`${API_BASE_URL}/courses/modules/${moduleId}/topics`, {
+      method: 'POST',
+      headers: api.getHeaders(),
+      body: JSON.stringify({ title }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create topic');
+    }
+    
+    return await response.json();
+  },
+
+  updateTopic: async (topicId, title) => {
+    const response = await fetch(`${API_BASE_URL}/courses/topics/${topicId}`, {
+      method: 'PATCH',
+      headers: api.getHeaders(),
+      body: JSON.stringify({ title }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update topic');
+    }
+    
+    return await response.json();
+  },
+
+  deleteTopic: async (topicId) => {
+    const response = await fetch(`${API_BASE_URL}/courses/topics/${topicId}`, {
+      method: 'DELETE',
+      headers: api.getHeaders(),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete topic');
+    }
+    
+    return await response.json();
+  },
+
   // Topic API
   getTopic: async (id) => {
     const response = await fetch(`${API_BASE_URL}/topics/${id}`, {
@@ -185,6 +274,21 @@ const api = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to generate topic content');
+    }
+    
+    return await response.json();
+  },
+
+  generateManualTopicContent: async (topicId, manualContent) => {
+    const response = await fetch(`${API_BASE_URL}/topics/${topicId}/generate-manual-content`, {
+      method: 'POST',
+      headers: api.getHeaders(),
+      body: JSON.stringify({ manual_content: manualContent }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate manual topic content');
     }
     
     return await response.json();

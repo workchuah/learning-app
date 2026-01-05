@@ -30,6 +30,11 @@ exports.getSettings = async (req, res, next) => {
         practical_task_agent: getAgentData('practical_task_agent'),
         quiz_agent: getAgentData('quiz_agent'),
         audiobook_agent: getAgentData('audiobook_agent'),
+        // Manual course agents
+        format_display_agent: getAgentData('format_display_agent'),
+        explanation_agent: getAgentData('explanation_agent'),
+        manual_tutorial_exercises_agent: getAgentData('manual_tutorial_exercises_agent'),
+        manual_mcq_agent: getAgentData('manual_mcq_agent'),
       },
     });
   } catch (error) {
@@ -114,6 +119,12 @@ exports.updateSettings = async (req, res, next) => {
         tutorial_exercise_agent: getAgentData('tutorial_exercise_agent'),
         practical_task_agent: getAgentData('practical_task_agent'),
         quiz_agent: getAgentData('quiz_agent'),
+        audiobook_agent: getAgentData('audiobook_agent'),
+        // Manual course agents
+        format_display_agent: getAgentData('format_display_agent'),
+        explanation_agent: getAgentData('explanation_agent'),
+        manual_tutorial_exercises_agent: getAgentData('manual_tutorial_exercises_agent'),
+        manual_mcq_agent: getAgentData('manual_mcq_agent'),
       },
     });
   } catch (error) {

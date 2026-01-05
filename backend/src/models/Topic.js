@@ -31,6 +31,22 @@ const TopicSchema = new mongoose.Schema(
         explanation: String,
       }],
     },
+    // Manual course fields
+    manual_content: { type: String, default: '' }, // User pasted content
+    formatted_content: { type: String, default: '' }, // Section 1: Formatted display
+    explained_content: { type: String, default: '' }, // Section 2: Detailed explanation
+    manual_tutorial_exercises: [{
+      question: String,
+      answer: String,
+    }], // Section 3: Tutorial exercises
+    manual_quiz: {
+      mcq_questions: [{
+        question: String,
+        options: [String],
+        correct_answer: Number, // Index of correct option
+        explanation: String,
+      }],
+    }, // Section 4: MCQ questions only
     status: { type: String, enum: ['pending', 'generating', 'ready'], default: 'pending' },
   },
   {

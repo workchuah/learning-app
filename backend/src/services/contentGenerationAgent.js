@@ -260,11 +260,158 @@ async function generateAudiobook(lectureNotes, provider = 'openai', apiKey = nul
   }
 }
 
+// Manual course agents
+async function formatDisplayContent(userContent, provider = 'openai', model = null, apiKey = null) {
+  const prompt = `You are a content formatter. Format the following content in a neat and tidy, well-structured markdown format.
+
+User Content:
+${userContent}
+
+Instructions:
+- Organize the content in a clear, readable structure
+- Use proper markdown formatting (headers, lists, emphasis, etc.)
+- Maintain the original information and meaning
+- Improve readability and structure
+- Use appropriate headings and subheadings
+- Format lists, paragraphs, and key points clearly
+
+Return the formatted content in clean markdown.`;
+
+  const openaiKey = provider === 'openai' ? apiKey : null;
+  const geminiKey = provider === 'gemini' ? apiKey : null;
+  return await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
+}
+
+async function generateExplanation(formattedContent, userContent, provider = 'openai', model = null, apiKey = null) {
+  const prompt = `You are an expert educator. Based on the following formatted content, provide more detailed explanations and examples.
+
+Formatted Content:
+${formattedContent}
+
+Original User Content (for reference):
+${userContent}
+
+Instructions:
+- Provide more detailed explanations of the concepts presented
+- Add practical examples and use cases
+- Explain why these concepts are important
+- Expand on key points with additional context
+- Make it beginner-friendly and easy to understand
+- Keep the original structure but add depth
+
+Format your response in clear, well-structured markdown with:
+- Detailed explanations
+- Practical examples
+- Important notes and tips
+- Additional context where helpful`;
+
+  const openaiKey = provider === 'openai' ? apiKey : null;
+  const geminiKey = provider === 'gemini' ? apiKey : null;
+  return await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
+}
+
+async function generateManualTutorialExercises(formattedContent, explainedContent, provider = 'openai', model = null, apiKey = null) {
+  const prompt = `You are an expert educator. Create 10 tutorial exercises with detailed answers based on the following content.
+
+Formatted Content:
+${formattedContent}
+
+Detailed Explanation:
+${explainedContent}
+
+Generate EXACTLY 10 tutorial exercises. For each exercise:
+- Provide a clear question or problem that tests understanding of the concepts
+- Include a detailed, well-organized answer/explanation (combination of paragraphs and bullet points with sub-points)
+- Make the answers beginner-friendly and easy to follow
+
+Format as JSON:
+{
+  "exercises": [
+    {
+      "question": "Exercise question here",
+      "answer": "Detailed answer and explanation here (use paragraphs and bullet points with sub-points for clarity)"
+    }
+  ]
+}
+
+IMPORTANT: Generate exactly 10 exercises.
+
+Return only valid JSON, no markdown code blocks.`;
+
+  const openaiKey = provider === 'openai' ? apiKey : null;
+  const geminiKey = provider === 'gemini' ? apiKey : null;
+  const response = await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
+  let jsonStr = response.trim();
+  if (jsonStr.startsWith('```')) {
+    jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return parsed.exercises || [];
+  } catch (error) {
+    console.error('Failed to parse manual tutorial exercises:', error);
+    return [];
+  }
+}
+
+async function generateManualMCQ(formattedContent, explainedContent, provider = 'openai', model = null, apiKey = null) {
+  const prompt = `You are an expert educator. Create 15 Multiple Choice Questions (MCQ) based on the following content.
+
+Formatted Content:
+${formattedContent}
+
+Detailed Explanation:
+${explainedContent}
+
+Generate EXACTLY 15 Multiple Choice Questions. For each MCQ:
+- Question that tests understanding of key concepts
+- 4 options (A, B, C, D) where only one is clearly correct
+- Correct answer (0-3 index, where 0=A, 1=B, 2=C, 3=D)
+- Detailed explanation of why the correct answer is right
+
+Format as JSON:
+{
+  "mcq_questions": [
+    {
+      "question": "Question text",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_answer": 0,
+      "explanation": "Why this is correct"
+    }
+  ]
+}
+
+IMPORTANT: Generate exactly 15 MCQ questions.
+
+Return only valid JSON, no markdown code blocks.`;
+
+  const openaiKey = provider === 'openai' ? apiKey : null;
+  const geminiKey = provider === 'gemini' ? apiKey : null;
+  const response = await aiService.generate(prompt, provider, model, openaiKey, geminiKey);
+  let jsonStr = response.trim();
+  if (jsonStr.startsWith('```')) {
+    jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return { mcq_questions: parsed.mcq_questions || [] };
+  } catch (error) {
+    console.error('Failed to parse manual MCQ:', error);
+    return { mcq_questions: [] };
+  }
+}
+
 module.exports = {
   generateLectureNotes,
   generateTutorialExercises,
   generatePracticalTasks,
   generateQuiz,
   generateAudiobook,
+  formatDisplayContent,
+  generateExplanation,
+  generateManualTutorialExercises,
+  generateManualMCQ,
 };
 

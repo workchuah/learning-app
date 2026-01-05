@@ -45,16 +45,30 @@
       </div>
       <form id="create-course-form">
         <div class="form-group">
+          <label class="form-label" for="course-type">Course Type *</label>
+          <select id="course-type" class="form-input" required>
+            <option value="ai_generated">AI Generated Course</option>
+            <option value="manual">Manual Course</option>
+          </select>
+          <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">
+            AI Generated: AI creates modules and topics. Manual: You create your own modules and topics.
+          </small>
+        </div>
+        
+        <div class="form-group">
           <label class="form-label" for="course-title">Course Title *</label>
           <input type="text" id="course-title" class="form-input" required>
         </div>
         
-        <div class="form-group">
+        <div class="form-group" id="course-goal-group">
           <label class="form-label" for="course-goal">Course Goal *</label>
           <textarea id="course-goal" class="form-input" rows="3" required></textarea>
+          <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;" id="course-goal-help">
+            Describe what students will learn from this course.
+          </small>
         </div>
         
-        <div class="form-group">
+        <div class="form-group" id="course-outline-group" style="display: none;">
           <label class="form-label" for="course-outline">Course Outline (Optional)</label>
           <input type="file" id="course-outline" class="form-input" accept=".pdf,.txt,.md">
           <small style="color: #64748b; font-size: 12px;">Upload PDF, TXT, or MD file. If not provided, AI will design the course structure.</small>

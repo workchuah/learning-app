@@ -68,6 +68,21 @@ modal.addEventListener('click', (e) => {
   }
 });
 
+// Handle course type change
+document.getElementById('course-type').addEventListener('change', (e) => {
+  const courseType = e.target.value;
+  const outlineGroup = document.getElementById('course-outline-group');
+  const goalHelp = document.getElementById('course-goal-help');
+  
+  if (courseType === 'ai_generated') {
+    outlineGroup.style.display = 'block';
+    goalHelp.textContent = 'Describe what students will learn from this course.';
+  } else {
+    outlineGroup.style.display = 'none';
+    goalHelp.textContent = 'Brief description of the course (optional for manual courses).';
+  }
+});
+
 // Create course form
 document.getElementById('create-course-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -80,6 +95,7 @@ document.getElementById('create-course-form').addEventListener('submit', async (
   const formData = new FormData();
   formData.append('title', document.getElementById('course-title').value);
   formData.append('goal', document.getElementById('course-goal').value);
+  formData.append('course_type', document.getElementById('course-type').value);
   // Timeline will be auto-estimated by AI during course structure generation
   
   const outlineFile = document.getElementById('course-outline').files[0];

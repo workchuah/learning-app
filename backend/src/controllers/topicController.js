@@ -7,6 +7,10 @@ const {
   generatePracticalTasks,
   generateQuiz,
   generateAudiobook,
+  formatDisplayContent,
+  generateExplanation,
+  generateManualTutorialExercises,
+  generateManualMCQ,
 } = require('../services/contentGenerationAgent');
 
 exports.getTopic = async (req, res, next) => {
@@ -110,6 +114,108 @@ exports.generateTopicContent = async (req, res, next) => {
       await topic.save();
 
       res.json({ message: 'Topic content generated successfully', topic });
+    } catch (error) {
+      topic.status = 'pending';
+      await topic.save();
+      throw error;
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.generateManualTopicContent = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id)
+      .populate('course_id', 'title goal course_type');
+    
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    // Verify course ownership
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'This endpoint is only for manual courses' });
+    }
+
+    const { manual_content } = req.body;
+    if (!manual_content || !manual_content.trim()) {
+      return res.status(400).json({ error: 'manual_content is required' });
+    }
+
+    topic.status = 'generating';
+    topic.manual_content = manual_content;
+    await topic.save();
+
+    try {
+      const user = await require('../models/User').findById(req.user._id);
+      
+      // Get API keys for manual course agents
+      const formatKeys = user.api_keys?.format_display_agent || {};
+      const explanationKeys = user.api_keys?.explanation_agent || {};
+      const tutorialKeys = user.api_keys?.manual_tutorial_exercises_agent || {};
+      const mcqKeys = user.api_keys?.manual_mcq_agent || {};
+      
+      const formatProvider = formatKeys.provider || 'openai';
+      const formatModel = formatProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const explanationProvider = explanationKeys.provider || 'openai';
+      const explanationModel = explanationProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const tutorialProvider = tutorialKeys.provider || 'openai';
+      const tutorialModel = tutorialProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      const mcqProvider = mcqKeys.provider || 'openai';
+      const mcqModel = mcqProvider === 'openai' ? user.openai_model : user.gemini_model;
+      
+      // Section 1: Format display
+      const formattedContent = await formatDisplayContent(
+        manual_content,
+        formatProvider,
+        formatModel,
+        formatKeys.api_key || null
+      );
+      
+      // Section 2: Explanation (based on formatted content)
+      const explainedContent = await generateExplanation(
+        formattedContent,
+        manual_content,
+        explanationProvider,
+        explanationModel,
+        explanationKeys.api_key || null
+      );
+      
+      // Section 3 & 4: Generate in parallel (based on formatted and explained content)
+      const [exercises, quiz] = await Promise.all([
+        generateManualTutorialExercises(
+          formattedContent,
+          explainedContent,
+          tutorialProvider,
+          tutorialModel,
+          tutorialKeys.api_key || null
+        ),
+        generateManualMCQ(
+          formattedContent,
+          explainedContent,
+          mcqProvider,
+          mcqModel,
+          mcqKeys.api_key || null
+        ),
+      ]);
+
+      topic.formatted_content = formattedContent;
+      topic.explained_content = explainedContent;
+      topic.manual_tutorial_exercises = exercises;
+      topic.manual_quiz = quiz;
+      topic.status = 'ready';
+      await topic.save();
+
+      res.json({ message: 'Manual topic content generated successfully', topic });
     } catch (error) {
       topic.status = 'pending';
       await topic.save();
