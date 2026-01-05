@@ -55,40 +55,42 @@ let originalProviders = {};
 let agentConfiguredStatus = {};
 
 function updateAgentUI(prefix, agentData) {
-  if (!agentData) {
-    // Agent not configured yet
-    agentConfiguredStatus[prefix] = false;
-    originalProviders[prefix] = 'openai'; // default
-    return;
-  }
-  
   // Update provider dropdown
   const providerSelect = document.getElementById(`${prefix}-provider`);
-  if (providerSelect && agentData.provider) {
-    providerSelect.value = agentData.provider;
-    // Store original value
-    originalProviders[prefix] = agentData.provider;
+  if (providerSelect) {
+    if (agentData && agentData.provider) {
+      providerSelect.value = agentData.provider;
+      originalProviders[prefix] = agentData.provider;
+    } else {
+      originalProviders[prefix] = 'openai'; // default
+    }
   } else {
     originalProviders[prefix] = 'openai'; // default
   }
   
   // Store configured status
-  agentConfiguredStatus[prefix] = agentData.configured || false;
+  agentConfiguredStatus[prefix] = agentData && agentData.configured ? true : false;
   
   // Update API key field with saved value (masked by default)
   const apiKeyInput = document.getElementById(`${prefix}-api-key`);
-  if (apiKeyInput && agentData.api_key) {
-    // Store the actual key value (for editing)
-    apiKeyInput.value = agentData.api_key;
-    // Keep it as password type (masked) by default
-    apiKeyInput.type = 'password';
+  if (apiKeyInput) {
+    if (agentData && agentData.api_key) {
+      // Store the actual key value (for editing)
+      apiKeyInput.value = agentData.api_key;
+      // Keep it as password type (masked) by default
+      apiKeyInput.type = 'password';
+    } else {
+      // Clear the field if no data
+      apiKeyInput.value = '';
+    }
   }
   
-  // Update status badge
+  // Update status badge - always update, even if agentData is null/undefined
   const statusBadge = document.getElementById(`${prefix}-status`);
   if (statusBadge) {
-    statusBadge.textContent = agentData.configured ? '✓ Configured' : '✗ Not Configured';
-    statusBadge.className = `status-badge ${agentData.configured ? 'status-success' : 'status-error'}`;
+    const isConfigured = agentData && agentData.configured && agentData.api_key;
+    statusBadge.textContent = isConfigured ? '✓ Configured' : '✗ Not Configured';
+    statusBadge.className = `status-badge ${isConfigured ? 'status-success' : 'status-error'}`;
   }
 }
 
