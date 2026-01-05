@@ -117,9 +117,11 @@ function renderModules() {
     // Add edit/delete buttons for manual courses
     let actionButtons = '';
     if (isManualCourse) {
+      const moduleTitleEscaped = (module.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+      const moduleDescEscaped = (module.description || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
       actionButtons = `
         <div style="display: flex; gap: 8px; margin-left: 12px;">
-          <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="editModule('${module._id}', '${module.title.replace(/'/g, "\\'")}')">✏️ Edit</button>
+          <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="editModule('${module._id}', '${moduleTitleEscaped}', '${moduleDescEscaped}')">✏️ Edit</button>
           <button class="btn btn-danger" style="padding: 4px 12px; font-size: 12px;" onclick="deleteModule('${module._id}')">🗑️ Delete</button>
         </div>
       `;
@@ -176,7 +178,14 @@ async function loadModuleTopics(moduleId, container, isManualCourse = false) {
     
     if (moduleTopics.length === 0) {
       if (isManualCourse) {
-        topicsList.innerHTML = '<p style="color: #64748b;">No topics yet. Click "Add Topic" to create one.</p>';
+        topicsList.innerHTML = '<p style="color: #64748b; margin-bottom: 12px;">No topics yet. Click "Add Topic" below to create one.</p>';
+        // Add "Add Topic" button even when there are no topics
+        const addTopicBtn = document.createElement('button');
+        addTopicBtn.className = 'btn btn-primary';
+        addTopicBtn.style.width = '100%';
+        addTopicBtn.textContent = '+ Add Topic';
+        addTopicBtn.onclick = () => createTopic(moduleId);
+        topicsList.appendChild(addTopicBtn);
       } else {
         topicsList.innerHTML = '<p style="color: #64748b;">No topics in this module yet.</p>';
       }
@@ -325,33 +334,144 @@ if (generateBtn) {
   });
 }
 
-// Manual course module/topic management functions
-async function createModule() {
-  const title = prompt('Enter module title:');
-  if (!title || !title.trim()) return;
-  
-  const description = prompt('Enter module description (optional):') || '';
-  
-  try {
-    await api.createModule(courseId, title.trim(), description.trim());
-    loadCourse();
-  } catch (error) {
-    document.getElementById('error-message').textContent = error.message;
-    document.getElementById('error-message').classList.remove('hidden');
-  }
+// Module and Topic Modal Management
+let currentModuleId = null;
+let currentTopicId = null;
+let currentModuleTitle = null;
+let currentTopicTitle = null;
+
+// Module Modal
+const moduleModal = document.getElementById('module-modal');
+const moduleForm = document.getElementById('module-form');
+const moduleTitleInput = document.getElementById('module-title');
+const moduleDescriptionInput = document.getElementById('module-description');
+const moduleModalTitle = document.getElementById('module-modal-title');
+
+function openModuleModal(moduleId = null, title = '', description = '') {
+  currentModuleId = moduleId;
+  moduleTitleInput.value = title;
+  moduleDescriptionInput.value = description;
+  moduleModalTitle.textContent = moduleId ? 'Edit Module' : 'Add Module';
+  moduleModal.classList.remove('hidden');
+  moduleTitleInput.focus();
 }
 
-async function editModule(moduleId, currentTitle) {
-  const newTitle = prompt('Enter new module title:', currentTitle);
-  if (!newTitle || !newTitle.trim() || newTitle === currentTitle) return;
+function closeModuleModal() {
+  moduleModal.classList.add('hidden');
+  moduleForm.reset();
+  currentModuleId = null;
+}
+
+// Topic Modal
+const topicModal = document.getElementById('topic-modal');
+const topicForm = document.getElementById('topic-form');
+const topicTitleInput = document.getElementById('topic-title-input');
+const topicModalTitle = document.getElementById('topic-modal-title');
+
+function openTopicModal(moduleId, topicId = null, title = '') {
+  currentModuleId = moduleId;
+  currentTopicId = topicId;
+  topicTitleInput.value = title;
+  topicModalTitle.textContent = topicId ? 'Edit Topic' : 'Add Topic';
+  topicModal.classList.remove('hidden');
+  topicTitleInput.focus();
+}
+
+function closeTopicModal() {
+  topicModal.classList.add('hidden');
+  topicForm.reset();
+  currentModuleId = null;
+  currentTopicId = null;
+}
+
+// Module Modal Event Listeners
+document.getElementById('close-module-modal').addEventListener('click', closeModuleModal);
+document.getElementById('cancel-module-btn').addEventListener('click', closeModuleModal);
+moduleModal.addEventListener('click', (e) => {
+  if (e.target === moduleModal) {
+    closeModuleModal();
+  }
+});
+
+moduleForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = moduleTitleInput.value.trim();
+  const description = moduleDescriptionInput.value.trim();
+  
+  if (!title) {
+    alert('Module title is required');
+    return;
+  }
+  
+  const btn = document.getElementById('save-module-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
   
   try {
-    await api.updateModule(moduleId, newTitle.trim());
+    if (currentModuleId) {
+      // Edit existing module
+      await api.updateModule(currentModuleId, title, description);
+    } else {
+      // Create new module
+      await api.createModule(courseId, title, description);
+    }
+    closeModuleModal();
     loadCourse();
   } catch (error) {
     document.getElementById('error-message').textContent = error.message;
     document.getElementById('error-message').classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Save';
   }
+});
+
+// Topic Modal Event Listeners
+document.getElementById('close-topic-modal').addEventListener('click', closeTopicModal);
+document.getElementById('cancel-topic-btn').addEventListener('click', closeTopicModal);
+topicModal.addEventListener('click', (e) => {
+  if (e.target === topicModal) {
+    closeTopicModal();
+  }
+});
+
+topicForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = topicTitleInput.value.trim();
+  
+  if (!title) {
+    alert('Topic title is required');
+    return;
+  }
+  
+  const btn = document.getElementById('save-topic-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  
+  try {
+    if (currentTopicId) {
+      // Edit existing topic
+      await api.updateTopic(currentTopicId, title);
+    } else {
+      // Create new topic
+      await api.createTopic(currentModuleId, title);
+    }
+    closeTopicModal();
+    loadCourse();
+  } catch (error) {
+    document.getElementById('error-message').textContent = error.message;
+    document.getElementById('error-message').classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+});
+
+// Manual course module/topic management functions
+function createModule() {
+  openModuleModal();
+}
+
+function editModule(moduleId, currentTitle, currentDescription = '') {
+  openModuleModal(moduleId, currentTitle, currentDescription);
 }
 
 async function deleteModule(moduleId) {
@@ -368,29 +488,20 @@ async function deleteModule(moduleId) {
   }
 }
 
-async function createTopic(moduleId) {
-  const title = prompt('Enter topic title:');
-  if (!title || !title.trim()) return;
-  
-  try {
-    await api.createTopic(moduleId, title.trim());
-    loadCourse();
-  } catch (error) {
-    document.getElementById('error-message').textContent = error.message;
-    document.getElementById('error-message').classList.remove('hidden');
-  }
+function createTopic(moduleId) {
+  openTopicModal(moduleId);
 }
 
-async function editTopic(topicId, currentTitle) {
-  const newTitle = prompt('Enter new topic title:', currentTitle);
-  if (!newTitle || !newTitle.trim() || newTitle === currentTitle) return;
+function editTopic(topicId, currentTitle) {
+  // Find the module ID for this topic
+  const topic = topics.find(t => {
+    const tid = typeof t._id === 'string' ? t._id : t._id?.toString();
+    return tid === topicId || tid === topicId.toString();
+  });
   
-  try {
-    await api.updateTopic(topicId, newTitle.trim());
-    loadCourse();
-  } catch (error) {
-    document.getElementById('error-message').textContent = error.message;
-    document.getElementById('error-message').classList.remove('hidden');
+  if (topic) {
+    const moduleId = typeof topic.module_id === 'string' ? topic.module_id : topic.module_id?._id || topic.module_id;
+    openTopicModal(moduleId, topicId, currentTitle);
   }
 }
 

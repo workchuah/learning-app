@@ -65,6 +65,50 @@
     <div id="error-message" class="alert alert-error hidden"></div>
   </main>
 
+  <!-- Module Modal -->
+  <div id="module-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="module-modal-title">Add Module</h2>
+        <button class="modal-close" id="close-module-modal">&times;</button>
+      </div>
+      <form id="module-form">
+        <div class="form-group">
+          <label class="form-label" for="module-title">Module Title *</label>
+          <input type="text" id="module-title" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="module-description">Description (Optional)</label>
+          <textarea id="module-description" class="form-input" rows="3"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-module-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-module-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Topic Modal -->
+  <div id="topic-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="topic-modal-title">Add Topic</h2>
+        <button class="modal-close" id="close-topic-modal">&times;</button>
+      </div>
+      <form id="topic-form">
+        <div class="form-group">
+          <label class="form-label" for="topic-title">Topic Title *</label>
+          <input type="text" id="topic-title-input" class="form-input" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-topic-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-topic-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="js/config.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/auth.js"></script>
