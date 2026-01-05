@@ -72,7 +72,12 @@ exports.updateSettings = async (req, res, next) => {
         'tutorial_exercise_agent',
         'practical_task_agent',
         'quiz_agent',
-        'audiobook_agent'
+        'audiobook_agent',
+        // Manual course agents
+        'format_display_agent',
+        'explanation_agent',
+        'manual_tutorial_exercises_agent',
+        'manual_mcq_agent'
       ];
       
       agentNames.forEach(agentName => {
