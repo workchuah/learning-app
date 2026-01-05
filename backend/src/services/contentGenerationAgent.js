@@ -273,7 +273,7 @@ Instructions:
 - Maintain the original information and meaning
 - Improve readability and structure
 - Use appropriate headings and subheadings
-- Format lists, paragraphs, and key points clearly
+- Format lists, paragraphs, tables, and key points clearly
 
 Return the formatted content in clean markdown.`;
 
