@@ -303,7 +303,8 @@ Format your response in clear, well-structured markdown with:
 - Detailed explanations
 - Practical examples
 - Important notes and tips
-- Additional context where helpful`;
+- Additional context where helpful
+- Tables should be formatted using markdown tables and should be aligned properly`;
 
   const openaiKey = provider === 'openai' ? apiKey : null;
   const geminiKey = provider === 'gemini' ? apiKey : null;
