@@ -906,66 +906,91 @@ function simpleMarkdownToHtml(markdown) {
   // This regex matches tables that have at least a header row, separator row, and one data row
   const tableRegex = /(\|.+\|\s*\n\|[\s\-:]+\|\s*\n(?:\|.+\|\s*\n?)+)/gm;
   
-  // Replace markdown tables with styled containers (keep markdown format)
+  // Convert markdown tables to bullet point format
   html = html.replace(tableRegex, (tableMatch) => {
-    // Normalize table spacing for better alignment
-    const lines = tableMatch.trim().split('\n');
-    const normalizedLines = lines.map(line => {
-      // Split by | and trim each cell, then rejoin with consistent spacing
-      const cells = line.split('|').map(cell => cell.trim());
-      // Rejoin with consistent spacing: " | " between cells
-      return '| ' + cells.slice(1, -1).join(' | ') + ' |';
+    const lines = tableMatch.trim().split('\n').map(line => line.trim()).filter(line => line);
+    
+    if (lines.length < 2) return tableMatch; // Need at least header and separator
+    
+    // Find the separator row (contains --- or :---: or ---: or :---)
+    let separatorIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].match(/^\|[\s\-:]+\|/)) {
+        separatorIndex = i;
+        break;
+      }
+    }
+    
+    if (separatorIndex === -1 || separatorIndex === 0) return tableMatch; // No separator found
+    
+    const headerRow = lines[0];
+    const dataRows = lines.slice(separatorIndex + 1);
+    
+    // Parse header row - split by | and filter out empty strings
+    const headerCells = headerRow.split('|')
+      .map(cell => cell.trim())
+      .filter(cell => cell.length > 0);
+    
+    if (headerCells.length === 0) return tableMatch; // No valid header cells
+    
+    // Convert table to bullet point format
+    let bulletPoints = '<div class="table-as-points" style="margin: 20px 0; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #3b82f6;">';
+    
+    // Process each data row
+    dataRows.forEach((row, rowIndex) => {
+      // Parse row cells
+      const cells = row.split('|')
+        .map(cell => cell.trim())
+        .filter(cell => cell.length > 0);
+      
+      if (cells.length === 0) return; // Skip empty rows
+      
+      // Match cells to headers (handle cases where cells don't match header count)
+      const numCells = Math.min(cells.length, headerCells.length);
+      
+      // Create a bullet point for each row
+      bulletPoints += `<div style="margin-bottom: ${rowIndex < dataRows.length - 1 ? '16px' : '0'}; padding-bottom: ${rowIndex < dataRows.length - 1 ? '16px' : '0'}; border-bottom: ${rowIndex < dataRows.length - 1 ? '1px solid #e2e8f0' : 'none'};">`;
+      bulletPoints += `<div style="font-weight: 600; color: #1e293b; margin-bottom: 8px; font-size: 15px;">📌 Entry ${rowIndex + 1}</div>`;
+      bulletPoints += '<ul style="margin: 0; padding-left: 20px; list-style-type: none;">';
+      
+      // Helper function to process markdown in cell values
+      const processCellMarkdown = (text) => {
+        return text
+          // Process bold (**text**)
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          // Process italic (*text*)
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          // Process inline code (`code`)
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          // Process links ([text](url))
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+      };
+      
+      // Add each cell as a list item
+      for (let i = 0; i < numCells; i++) {
+        const header = headerCells[i] || `Column ${i + 1}`;
+        const cellValue = cells[i] || '';
+        
+        if (cellValue.trim()) {
+          const processedValue = processCellMarkdown(cellValue);
+          bulletPoints += `<li style="margin-bottom: 6px;"><strong>${header}:</strong> ${processedValue}</li>`;
+        }
+      }
+      
+      // Add any extra cells that don't have headers
+      for (let i = numCells; i < cells.length; i++) {
+        if (cells[i].trim()) {
+          const processedValue = processCellMarkdown(cells[i]);
+          bulletPoints += `<li style="margin-bottom: 6px;">${processedValue}</li>`;
+        }
+      }
+      
+      bulletPoints += '</ul></div>';
     });
     
-    let processedTable = normalizedLines.join('\n');
+    bulletPoints += '</div>';
     
-    // Process markdown formatting in table cells
-    processedTable = processedTable
-      // Process bold (**text**)
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Process italic (*text*) - avoid matching table separators
-      .replace(/([^|*])\*([^*|]+)\*([^|*])/g, '$1<em>$2</em>$3')
-      // Process inline code (`code`)
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      // Process links ([text](url))
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-    
-    // Escape HTML but preserve formatting tags
-    const tagMap = {
-      '<strong>': '___STRONG_OPEN___',
-      '</strong>': '___STRONG_CLOSE___',
-      '<em>': '___EM_OPEN___',
-      '</em>': '___EM_CLOSE___',
-      '<code>': '___CODE_OPEN___',
-      '</code>': '___CODE_CLOSE___',
-    };
-    
-    // Replace tags with placeholders
-    Object.keys(tagMap).forEach(tag => {
-      processedTable = processedTable.replace(new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), tagMap[tag]);
-    });
-    
-    // Handle links separately (they have attributes)
-    processedTable = processedTable.replace(/<a href="([^"]+)">([^<]+)<\/a>/g, (match, url, text) => {
-      return `___LINK_START_${url}___${text}___LINK_END___`;
-    });
-    
-    // Escape HTML
-    processedTable = processedTable
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    
-    // Restore formatting tags
-    Object.keys(tagMap).forEach(tag => {
-      processedTable = processedTable.replace(new RegExp(tagMap[tag].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), tag);
-    });
-    
-    // Restore links
-    processedTable = processedTable.replace(/___LINK_START_([^_]+)___([^_]+)___LINK_END___/g, '<a href="$1">$2</a>');
-    
-    // Wrap in a styled pre container for proper alignment with monospace font
-    return `<div class="markdown-table-container"><pre class="markdown-table">${processedTable}</pre></div>`;
+    return bulletPoints;
   });
   
   // Now process other markdown elements
