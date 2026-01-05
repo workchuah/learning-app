@@ -11,13 +11,15 @@ async function loadSettings() {
     document.getElementById('openai-model').value = settings.openai_model || 'gpt-4';
     document.getElementById('gemini-model').value = settings.gemini_model || 'gemini-pro';
     
-    // Initialize originalProviders and configured status
+    // Initialize originalProviders, originalApiKeys, and configured status
     originalProviders = {};
+    originalApiKeys = {};
     agentConfiguredStatus = {};
     
     // Initialize defaults for all agents
     ['cs', 'cg', 'te', 'pt', 'qz', 'ab', 'fd', 'ex', 'mte', 'mmcq'].forEach(prefix => {
       originalProviders[prefix] = 'openai';
+      originalApiKeys[prefix] = '';
       agentConfiguredStatus[prefix] = false;
     });
     
@@ -50,8 +52,9 @@ async function loadSettings() {
   }
 }
 
-// Store original provider values and configured status to detect changes
+// Store original provider values, API keys, and configured status to detect changes
 let originalProviders = {};
+let originalApiKeys = {};
 let agentConfiguredStatus = {};
 
 function updateAgentUI(prefix, agentData) {
@@ -77,11 +80,14 @@ function updateAgentUI(prefix, agentData) {
     if (agentData && agentData.api_key) {
       // Store the actual key value (for editing)
       apiKeyInput.value = agentData.api_key;
+      // Store the original value to detect changes
+      originalApiKeys[prefix] = agentData.api_key;
       // Keep it as password type (masked) by default
       apiKeyInput.type = 'password';
     } else {
       // Clear the field if no data
       apiKeyInput.value = '';
+      originalApiKeys[prefix] = '';
     }
   }
   
@@ -138,8 +144,8 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     // Get API keys from input fields - only include agents that have values
     const apiKeys = {};
     
-    // Helper function to add agent if it has a value or provider changed
-    const addAgentIfHasValue = (agentName, prefix) => {
+    // Helper function to add agent only if value or provider changed
+    const addAgentIfChanged = (agentName, prefix) => {
       try {
         const apiKeyInput = document.getElementById(`${prefix}-api-key`);
         const providerSelect = document.getElementById(`${prefix}-provider`);
@@ -153,45 +159,49 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
         const apiKeyValue = apiKeyInput.value.trim();
         const providerValue = providerSelect.value;
         const originalProvider = originalProviders[prefix] || 'openai';
+        const originalApiKey = originalApiKeys[prefix] || '';
         const isConfigured = agentConfiguredStatus[prefix] || false;
         
-        // Include if:
-        // 1. api_key has a value (user is setting/updating it), OR
-        // 2. agent is already configured AND provider changed (update provider only)
+        // Check if values have changed
+        const apiKeyChanged = apiKeyValue !== originalApiKey;
         const providerChanged = providerValue !== originalProvider;
         
-        if (apiKeyValue) {
-          // User is providing/updating API key
+        // Include if:
+        // 1. API key value has changed AND is not empty (user is setting/updating it), OR
+        // 2. Provider has changed (user wants to change provider)
+        if (apiKeyChanged && apiKeyValue) {
+          // User is providing/updating API key (non-empty)
           apiKeys[agentName] = {
             provider: providerValue,
             api_key: apiKeyValue,
           };
-        } else if (isConfigured && providerChanged) {
-          // Agent is configured, provider changed, but no new API key
+        } else if (providerChanged && isConfigured) {
+          // Agent is configured, provider changed, but API key unchanged
           // Only update provider, keep existing API key
           apiKeys[agentName] = {
             provider: providerValue,
             // Don't include api_key - backend will keep existing value
           };
         }
-        // If api_key is empty and provider didn't change, don't include (preserve everything)
+        // If neither API key nor provider changed, don't include (preserve everything)
+        // If API key was cleared (empty), don't include (don't remove existing keys)
       } catch (error) {
         console.error(`Error processing ${agentName} (prefix: ${prefix}):`, error);
       }
     };
     
-    // Only add agents that have API key values
-    addAgentIfHasValue('course_structure_agent', 'cs');
-    addAgentIfHasValue('content_generation_agent', 'cg');
-    addAgentIfHasValue('tutorial_exercise_agent', 'te');
-    addAgentIfHasValue('practical_task_agent', 'pt');
-    addAgentIfHasValue('quiz_agent', 'qz');
-    addAgentIfHasValue('audiobook_agent', 'ab');
+    // Only add agents that have changed values
+    addAgentIfChanged('course_structure_agent', 'cs');
+    addAgentIfChanged('content_generation_agent', 'cg');
+    addAgentIfChanged('tutorial_exercise_agent', 'te');
+    addAgentIfChanged('practical_task_agent', 'pt');
+    addAgentIfChanged('quiz_agent', 'qz');
+    addAgentIfChanged('audiobook_agent', 'ab');
     // Manual course agents
-    addAgentIfHasValue('format_display_agent', 'fd');
-    addAgentIfHasValue('explanation_agent', 'ex');
-    addAgentIfHasValue('manual_tutorial_exercises_agent', 'mte');
-    addAgentIfHasValue('manual_mcq_agent', 'mmcq');
+    addAgentIfChanged('format_display_agent', 'fd');
+    addAgentIfChanged('explanation_agent', 'ex');
+    addAgentIfChanged('manual_tutorial_exercises_agent', 'mte');
+    addAgentIfChanged('manual_mcq_agent', 'mmcq');
     
     // Debug: Log what we're about to save
     console.log('API Keys to save:', Object.keys(apiKeys));
