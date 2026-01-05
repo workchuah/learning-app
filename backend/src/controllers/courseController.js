@@ -54,45 +54,22 @@ exports.createCourse = async (req, res, next) => {
       }
 
       try {
-        const { title, goal, course_type } = req.body;
+        const { title, goal } = req.body;
         let outlineText = '';
 
         if (req.file) {
           outlineText = await extractTextFromFile(req.file.path);
         }
 
-        const courseType = course_type || 'ai_generated';
-        
-        // Validate: AI-generated courses require goal
-        if (courseType === 'ai_generated' && (!goal || goal.trim() === '')) {
-          return res.status(400).json({ error: 'Course goal is required for AI-generated courses' });
-        }
-
-        // For manual courses, goal is optional - always set to empty string
-        // For AI-generated courses, use the provided goal
-        const goalValue = (courseType === 'manual') ? '' : (goal || '');
-        
-        const courseData = {
+        const course = await Course.create({
           title,
-          goal: goalValue, // Always a string (empty for manual, provided value for AI-generated)
-          course_type: courseType,
+          goal,
           target_timeline: '', // Will be estimated during structure generation
           outline_file: req.file ? req.file.filename : '',
           outline_text: outlineText,
           created_by: req.user._id,
           status: 'draft',
-        };
-
-        // Debug: Log the data being sent to Course.create
-        console.log('Creating course:', { 
-          title: courseData.title, 
-          goal: courseData.goal, 
-          goalType: typeof courseData.goal,
-          goalLength: courseData.goal.length,
-          course_type: courseData.course_type 
         });
-
-        const course = await Course.create(courseData);
 
         res.status(201).json(course);
       } catch (error) {
@@ -281,113 +258,6 @@ exports.deleteCourse = async (req, res, next) => {
 
     await Course.findByIdAndDelete(req.params.id);
     res.json({ message: 'Course deleted successfully' });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Manual module creation (for manual courses)
-exports.createModule = async (req, res, next) => {
-  try {
-    const course = await Course.findById(req.params.id);
-    if (!course || course.created_by.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ error: 'Course not found' });
-    }
-
-    if (course.course_type !== 'manual') {
-      return res.status(400).json({ error: 'Modules can only be manually added to manual courses.' });
-    }
-
-    const { title, description } = req.body;
-    
-    if (!title) {
-      return res.status(400).json({ error: 'Module title is required' });
-    }
-
-    // Get the highest order number for this course
-    const maxOrder = await Module.findOne({ course_id: course._id })
-      .sort({ order: -1 })
-      .select('order');
-    
-    const order = maxOrder ? maxOrder.order + 1 : 1;
-
-    const module = await Module.create({
-      course_id: course._id,
-      title,
-      description: description || '',
-      order,
-      difficulty_level: 'beginner', // Default for manual courses
-    });
-
-    res.status(201).json(module);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Update module (for manual courses only)
-exports.updateModule = async (req, res, next) => {
-  try {
-    const module = await Module.findById(req.params.moduleId);
-    if (!module) {
-      return res.status(404).json({ error: 'Module not found' });
-    }
-
-    const course = await Course.findById(module.course_id);
-    if (!course || course.created_by.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    if (course.course_type !== 'manual') {
-      return res.status(400).json({ error: 'Modules can only be edited in manual courses.' });
-    }
-
-    const { title, description } = req.body;
-    
-    if (title !== undefined) {
-      if (!title || title.trim() === '') {
-        return res.status(400).json({ error: 'Module title is required' });
-      }
-      module.title = title.trim();
-    }
-    
-    if (description !== undefined) {
-      module.description = description || '';
-    }
-
-    await module.save();
-    res.json(module);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Delete module (for manual courses only)
-exports.deleteModule = async (req, res, next) => {
-  try {
-    const module = await Module.findById(req.params.moduleId);
-    if (!module) {
-      return res.status(404).json({ error: 'Module not found' });
-    }
-
-    const course = await Course.findById(module.course_id);
-    if (!course || course.created_by.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    if (course.course_type !== 'manual') {
-      return res.status(400).json({ error: 'Modules can only be deleted in manual courses.' });
-    }
-
-    // Delete all topics in this module
-    await Topic.deleteMany({ module_id: module._id });
-    // Delete progress for this module
-    await require('../models/Progress').deleteMany({ module_id: module._id });
-
-    // Delete the module
-    await Module.findByIdAndDelete(module._id);
-
-    res.json({ message: 'Module deleted successfully' });
   } catch (error) {
     next(error);
   }
