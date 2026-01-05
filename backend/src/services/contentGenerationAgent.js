@@ -273,7 +273,8 @@ Instructions:
 - Maintain the original information and meaning
 - Improve readability and structure
 - Use appropriate headings and subheadings
-- Format lists, paragraphs, tables(html tables), and key points clearly
+- Format lists, paragraphs, tables(markdown tables), and key points clearly
+- Tables should be formatted using markdown tables and should be aligned properly
 
 Return the formatted content in clean markdown.`;
 
@@ -304,7 +305,7 @@ Format your response in clear, well-structured markdown with:
 - Practical examples
 - Important notes and tips
 - Additional context where helpful
-- Tables should be formatted using proper html tables and should be aligned properly`;
+- Tables should be formatted using markdown tables and should be aligned properly`;
 
   const openaiKey = provider === 'openai' ? apiKey : null;
   const geminiKey = provider === 'gemini' ? apiKey : null;
@@ -335,7 +336,7 @@ Format as JSON:
   ]
 }
 
-IMPORTANT: Generate exactly 10 exercises.
+IMPORTANT: Generate exactly 15 exercises.
 
 Return only valid JSON, no markdown code blocks.`;
 
