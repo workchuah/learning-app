@@ -900,112 +900,83 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 function simpleMarkdownToHtml(markdown) {
   if (!markdown) return '';
   
-  // First, convert markdown tables to HTML tables
-  // Tables are identified by lines starting with | and containing a separator row with ---
   let html = markdown;
-  
-  // Helper function to process markdown in table cells (bold, italic, code, links)
-  const processCellMarkdown = (cellText) => {
-    return cellText
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-  };
   
   // Match markdown tables - look for pattern: | row | | --- | | data |
   // This regex matches tables that have at least a header row, separator row, and one data row
   const tableRegex = /(\|.+\|\s*\n\|[\s\-:]+\|\s*\n(?:\|.+\|\s*\n?)+)/gm;
   
+  // Replace markdown tables with styled containers (keep markdown format)
   html = html.replace(tableRegex, (tableMatch) => {
-    const lines = tableMatch.trim().split('\n').map(line => line.trim()).filter(line => line);
-    
-    if (lines.length < 2) return tableMatch; // Need at least header and separator
-    
-    // Find the separator row (contains --- or :---: or ---: or :---)
-    let separatorIndex = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].match(/^\|[\s\-:]+\|/)) {
-        separatorIndex = i;
-        break;
-      }
-    }
-    
-    if (separatorIndex === -1 || separatorIndex === 0) return tableMatch; // No separator found or separator is first line
-    
-    const headerRow = lines[0];
-    const dataRows = lines.slice(separatorIndex + 1);
-    
-    // Parse header row - split by | and filter out empty strings
-    const headerCells = headerRow.split('|')
-      .map(cell => cell.trim())
-      .filter(cell => cell.length > 0);
-    
-    if (headerCells.length === 0) return tableMatch; // No valid header cells
-    
-    // Build HTML table
-    let tableHtml = '<table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">';
-    
-    // Add header row
-    tableHtml += '<thead><tr>';
-    headerCells.forEach(cell => {
-      const processedCell = processCellMarkdown(cell);
-      tableHtml += `<th style="border: 1px solid #e2e8f0; padding: 12px; text-align: left; background-color: #f8fafc; font-weight: 600;">${processedCell}</th>`;
+    // Normalize table spacing for better alignment
+    const lines = tableMatch.trim().split('\n');
+    const normalizedLines = lines.map(line => {
+      // Split by | and trim each cell, then rejoin with consistent spacing
+      const cells = line.split('|').map(cell => cell.trim());
+      // Rejoin with consistent spacing: " | " between cells
+      return '| ' + cells.slice(1, -1).join(' | ') + ' |';
     });
-    tableHtml += '</tr></thead>';
     
-    // Add data rows
-    if (dataRows.length > 0) {
-      tableHtml += '<tbody>';
-      dataRows.forEach(row => {
-        // Parse row cells - split by | and filter out empty strings
-        const cells = row.split('|')
-          .map(cell => cell.trim())
-          .filter(cell => cell.length > 0);
-        
-        if (cells.length > 0) {
-          tableHtml += '<tr>';
-          // Match number of cells to header (in case of misalignment)
-          const numCells = Math.min(cells.length, headerCells.length);
-          for (let i = 0; i < numCells; i++) {
-            const processedCell = processCellMarkdown(cells[i] || '');
-            tableHtml += `<td style="border: 1px solid #e2e8f0; padding: 12px;">${processedCell}</td>`;
-          }
-          // Fill remaining cells if header has more columns
-          for (let i = numCells; i < headerCells.length; i++) {
-            tableHtml += `<td style="border: 1px solid #e2e8f0; padding: 12px;"></td>`;
-          }
-          tableHtml += '</tr>';
-        }
-      });
-      tableHtml += '</tbody>';
-    }
-    tableHtml += '</table>';
+    let processedTable = normalizedLines.join('\n');
     
-    return tableHtml;
+    // Process markdown formatting in table cells
+    processedTable = processedTable
+      // Process bold (**text**)
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // Process italic (*text*) - avoid matching table separators
+      .replace(/([^|*])\*([^*|]+)\*([^|*])/g, '$1<em>$2</em>$3')
+      // Process inline code (`code`)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // Process links ([text](url))
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    
+    // Escape HTML but preserve formatting tags
+    const tagMap = {
+      '<strong>': '___STRONG_OPEN___',
+      '</strong>': '___STRONG_CLOSE___',
+      '<em>': '___EM_OPEN___',
+      '</em>': '___EM_CLOSE___',
+      '<code>': '___CODE_OPEN___',
+      '</code>': '___CODE_CLOSE___',
+    };
+    
+    // Replace tags with placeholders
+    Object.keys(tagMap).forEach(tag => {
+      processedTable = processedTable.replace(new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), tagMap[tag]);
+    });
+    
+    // Handle links separately (they have attributes)
+    processedTable = processedTable.replace(/<a href="([^"]+)">([^<]+)<\/a>/g, (match, url, text) => {
+      return `___LINK_START_${url}___${text}___LINK_END___`;
+    });
+    
+    // Escape HTML
+    processedTable = processedTable
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // Restore formatting tags
+    Object.keys(tagMap).forEach(tag => {
+      processedTable = processedTable.replace(new RegExp(tagMap[tag].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), tag);
+    });
+    
+    // Restore links
+    processedTable = processedTable.replace(/___LINK_START_([^_]+)___([^_]+)___LINK_END___/g, '<a href="$1">$2</a>');
+    
+    // Wrap in a styled pre container for proper alignment with monospace font
+    return `<div class="markdown-table-container"><pre class="markdown-table">${processedTable}</pre></div>`;
   });
   
-  // Replace HTML tables with placeholders temporarily
-  // This prevents line break replacements from breaking table HTML
-  const tablePlaceholder = '___TABLE_PLACEHOLDER___';
-  const tables = [];
-  let tableIndex = 0;
-  
-  // Replace tables with placeholders temporarily
-  html = html.replace(/<table[\s\S]*?<\/table>/gi, (match) => {
-    tables.push(match);
-    return `${tablePlaceholder}${tableIndex++}`;
-  });
-  
-  // Now process other markdown elements on non-table content
+  // Now process other markdown elements
   html = html
     // Headers
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
     .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    // Bold (but not inside tables)
+    // Bold
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Italic (but not inside tables)
+    // Italic
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     // Code blocks
     .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
@@ -1013,19 +984,14 @@ function simpleMarkdownToHtml(markdown) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    // Line breaks (but preserve table structure)
+    // Line breaks
     .replace(/\n\n/g, '</p><p>')
     .replace(/\n/g, '<br>');
-  
-  // Restore tables
-  html = html.replace(new RegExp(`${tablePlaceholder}(\\d+)`, 'g'), (match, index) => {
-    return tables[parseInt(index)] || match;
-  });
   
   // Preserve <mark> tags (for highlighted keywords) - do this before wrapping
   // The mark tags should already be in the HTML from the AI response
   
-  // Wrap in paragraph if not already wrapped and doesn't start with a table or other block element
+  // Wrap in paragraph if not already wrapped and doesn't start with a block element
   if (!html.trim().match(/^<(table|h[1-6]|pre|ul|ol|div)/i) && !html.trim().startsWith('<')) {
     html = '<p>' + html + '</p>';
   }

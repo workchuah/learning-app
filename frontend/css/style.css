@@ -403,6 +403,46 @@ textarea.form-input {
   text-align: center;
 }
 
+/* Markdown Table Styles */
+.markdown-table-container {
+  margin: 20px 0;
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.markdown-table {
+  margin: 0;
+  padding: 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+  color: #1e293b;
+  background: transparent;
+  border: none;
+}
+
+.markdown-table strong {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.markdown-table em {
+  font-style: italic;
+}
+
+.markdown-table code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #e11d48;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header {
@@ -423,6 +463,14 @@ textarea.form-input {
   .modal-content {
     width: 95%;
     padding: 16px;
+  }
+  
+  .markdown-table-container {
+    padding: 12px;
+  }
+  
+  .markdown-table {
+    font-size: 12px;
   }
 }
 
