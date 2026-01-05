@@ -31,13 +31,49 @@
       <div id="error-message" class="alert alert-error hidden"></div>
       <div id="success-message" class="alert alert-success hidden"></div>
 
-      <!-- Generate Content Button -->
-      <div id="generate-content-section" style="margin-bottom: 30px;">
+      <!-- Generate Content Button (AI Generated Courses) -->
+      <div id="generate-content-section" style="margin-bottom: 30px; display: none;">
         <div class="card">
           <p>This topic hasn't been generated yet. Click the button below to generate lecture notes, exercises, tasks, and quiz.</p>
           <button class="btn btn-primary" id="generate-content-btn">Generate Topic Content</button>
         </div>
       </div>
+
+      <!-- Manual Course Content Input -->
+      <div id="manual-content-section" style="margin-bottom: 30px; display: none;">
+        <div class="card">
+          <h2>📝 Paste Your Content</h2>
+          <p style="color: #64748b; margin-bottom: 16px;">
+            Paste the content from your online course here. After pasting, click "Generate Topic Content" to create formatted content, explanations, exercises, and quiz.
+          </p>
+          <textarea 
+            id="manual-content-input" 
+            class="form-input" 
+            rows="15" 
+            placeholder="Paste your course content here..."
+            style="width: 100%; font-family: monospace; font-size: 14px;"
+          ></textarea>
+          <button class="btn btn-primary" id="generate-manual-content-btn" style="margin-top: 16px;">Generate Topic Content</button>
+        </div>
+      </div>
+
+      <!-- Manual Course Section 1: Formatted Content -->
+      <section id="formatted-content-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>📄 Section 1: Formatted Content</h2>
+        <div id="formatted-content" class="markdown-content"></div>
+      </section>
+
+      <!-- Manual Course Section 2: Detailed Explanation -->
+      <section id="explained-content-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>💡 Section 2: Detailed Explanation</h2>
+        <div id="explained-content" class="markdown-content"></div>
+      </section>
+
+      <!-- Manual Course Section 3: Tutorial Exercises -->
+      <section id="manual-tutorial-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>✏️ Section 3: Tutorial Exercises (10 Exercises)</h2>
+        <div id="manual-tutorial-exercises-content"></div>
+      </section>
 
       <!-- Lecture Notes -->
       <section id="lecture-notes-section" class="card" style="display: none; margin-bottom: 30px;">
@@ -67,11 +103,18 @@
         <div id="practical-tasks-content"></div>
       </section>
 
-      <!-- Quiz -->
+      <!-- Quiz (AI Generated) -->
       <section id="quiz-section" class="card" style="display: none; margin-bottom: 30px;">
         <h2>📝 Quiz</h2>
         <div id="quiz-content"></div>
         <div id="quiz-results" style="display: none; margin-top: 20px;"></div>
+      </section>
+
+      <!-- Manual Course Section 4: MCQ Quiz -->
+      <section id="manual-quiz-section" class="card" style="display: none; margin-bottom: 30px;">
+        <h2>📝 Section 4: Multiple Choice Questions (15 Questions)</h2>
+        <div id="manual-quiz-content"></div>
+        <div id="manual-quiz-results" style="display: none; margin-top: 20px;"></div>
       </section>
     </div>
   </main>

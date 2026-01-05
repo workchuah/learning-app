@@ -52,13 +52,31 @@ async function loadTopic() {
     
     document.getElementById('topic-title').textContent = topic.title;
     
+    const isManualCourse = topic.course_type === 'manual';
+    
     // Show reset button if topic content exists
-    if (topic.status === 'ready' && topic.lecture_notes) {
-      document.getElementById('reset-topic-btn').style.display = 'inline-block';
-      renderTopicContent();
+    if (isManualCourse) {
+      // Manual course handling
+      if (topic.status === 'ready' && topic.formatted_content) {
+        document.getElementById('reset-topic-btn').style.display = 'inline-block';
+        renderManualTopicContent();
+      } else {
+        document.getElementById('manual-content-section').style.display = 'block';
+        // Pre-fill if manual_content exists
+        if (topic.manual_content) {
+          document.getElementById('manual-content-input').value = topic.manual_content;
+        }
+        document.getElementById('reset-topic-btn').style.display = 'none';
+      }
     } else {
-      document.getElementById('generate-content-section').style.display = 'block';
-      document.getElementById('reset-topic-btn').style.display = 'none';
+      // AI-generated course handling
+      if (topic.status === 'ready' && topic.lecture_notes) {
+        document.getElementById('reset-topic-btn').style.display = 'inline-block';
+        renderTopicContent();
+      } else {
+        document.getElementById('generate-content-section').style.display = 'block';
+        document.getElementById('reset-topic-btn').style.display = 'none';
+      }
     }
     
     loading.style.display = 'none';
@@ -459,6 +477,249 @@ function showQuizResults(score, answers) {
     `;
     resultsDiv.appendChild(completedDiv);
   }
+}
+
+// Render manual topic content (4 sections)
+function renderManualTopicContent() {
+  // Section 1: Formatted Content
+  if (topic.formatted_content) {
+    document.getElementById('formatted-content-section').style.display = 'block';
+    document.getElementById('formatted-content').innerHTML = simpleMarkdownToHtml(topic.formatted_content);
+  }
+  
+  // Section 2: Explained Content
+  if (topic.explained_content) {
+    document.getElementById('explained-content-section').style.display = 'block';
+    document.getElementById('explained-content').innerHTML = simpleMarkdownToHtml(topic.explained_content);
+  }
+  
+  // Section 3: Tutorial Exercises
+  if (topic.manual_tutorial_exercises && topic.manual_tutorial_exercises.length > 0) {
+    document.getElementById('manual-tutorial-section').style.display = 'block';
+    const container = document.getElementById('manual-tutorial-exercises-content');
+    container.innerHTML = '';
+    
+    topic.manual_tutorial_exercises.forEach((exercise, index) => {
+      const exerciseDiv = document.createElement('div');
+      exerciseDiv.style.marginBottom = '24px';
+      exerciseDiv.innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <strong>Exercise ${index + 1}:</strong>
+          <p style="margin-top: 8px;">${exercise.question}</p>
+        </div>
+        <details style="margin-top: 8px;">
+          <summary style="cursor: pointer; color: #3b82f6; font-weight: 500;">Show Answer</summary>
+          <div style="margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 6px;">
+            ${simpleMarkdownToHtml(exercise.answer)}
+          </div>
+        </details>
+      `;
+      container.appendChild(exerciseDiv);
+    });
+  }
+  
+  // Section 4: MCQ Quiz
+  if (topic.manual_quiz && topic.manual_quiz.mcq_questions && topic.manual_quiz.mcq_questions.length > 0) {
+    document.getElementById('manual-quiz-section').style.display = 'block';
+    renderManualQuiz();
+  }
+}
+
+// Render manual quiz (only MCQ, 15 questions)
+function renderManualQuiz() {
+  const container = document.getElementById('manual-quiz-content');
+  container.innerHTML = '';
+  
+  const form = document.createElement('form');
+  form.id = 'manual-quiz-form';
+  
+  // Get saved answers from progress (if exists)
+  let savedAnswers = {};
+  if (progress && progress.quiz_attempts && progress.quiz_attempts.length > 0) {
+    const latestAttempt = progress.quiz_attempts[progress.quiz_attempts.length - 1];
+    savedAnswers = latestAttempt.answers || {};
+  }
+  
+  // MCQ Questions (15 questions)
+  if (topic.manual_quiz.mcq_questions && topic.manual_quiz.mcq_questions.length > 0) {
+    const mcqSection = document.createElement('div');
+    mcqSection.style.marginBottom = '30px';
+    mcqSection.innerHTML = '<h3 style="margin-bottom: 16px;">Multiple Choice Questions (15 Questions)</h3>';
+    
+    topic.manual_quiz.mcq_questions.forEach((q, index) => {
+      const qDiv = document.createElement('div');
+      qDiv.style.marginBottom = '24px';
+      qDiv.style.padding = '16px';
+      qDiv.style.border = '1px solid #e2e8f0';
+      qDiv.style.borderRadius = '6px';
+      
+      const savedAnswer = savedAnswers[`mcq_${index}`];
+      
+      qDiv.innerHTML = `
+        <p style="font-weight: 500; margin-bottom: 12px;">${index + 1}. ${q.question}</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          ${q.options.map((opt, optIndex) => {
+            const isChecked = savedAnswer !== undefined && parseInt(savedAnswer) === optIndex;
+            return `
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="mcq_${index}" value="${optIndex}" ${isChecked ? 'checked' : ''} required>
+              <span>${opt}</span>
+            </label>
+          `;
+          }).join('')}
+        </div>
+      `;
+      mcqSection.appendChild(qDiv);
+    });
+    
+    form.appendChild(mcqSection);
+  }
+  
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'submit';
+  submitBtn.className = 'btn btn-primary';
+  submitBtn.textContent = 'Submit Quiz';
+  submitBtn.style.marginTop = '20px';
+  form.appendChild(submitBtn);
+  
+  container.appendChild(form);
+  
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitManualQuiz(form);
+  });
+}
+
+// Submit manual quiz
+async function submitManualQuiz(form) {
+  if (quizSubmitted) return;
+  
+  const formData = new FormData(form);
+  const answers = {};
+  
+  // Collect MCQ answers
+  topic.manual_quiz.mcq_questions?.forEach((q, index) => {
+    const answer = formData.get(`mcq_${index}`);
+    if (answer) answers[`mcq_${index}`] = parseInt(answer);
+  });
+  
+  // Calculate score - based on MCQ only
+  let correct = 0;
+  let total = 0;
+  
+  topic.manual_quiz.mcq_questions?.forEach((q, index) => {
+    total++;
+    if (answers[`mcq_${index}`] === q.correct_answer) {
+      correct++;
+    }
+  });
+  
+  const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+  
+  try {
+    // Save quiz results (but don't mark as completed yet)
+    await api.updateProgress({
+      course_id: courseId || topic.course_id,
+      topic_id: topicId,
+      type: 'topic',
+      completed: false, // Will be marked complete when user clicks "Complete this Topic"
+      quiz_score: score,
+      answers: answers,
+    });
+    
+    quizSubmitted = true;
+    showManualQuizResults(score, answers);
+  } catch (error) {
+    alert('Failed to submit quiz: ' + error.message);
+  }
+}
+
+// Show manual quiz results
+function showManualQuizResults(score, answers) {
+  const resultsDiv = document.getElementById('manual-quiz-results');
+  resultsDiv.style.display = 'block';
+  
+  const mcqCount = topic.manual_quiz.mcq_questions?.length || 0;
+  const correctCount = topic.manual_quiz.mcq_questions?.reduce((count, q, index) => {
+    return count + (answers[`mcq_${index}`] === q.correct_answer ? 1 : 0);
+  }, 0) || 0;
+  
+  resultsDiv.innerHTML = `
+    <div style="padding: 20px; background: #f8fafc; border-radius: 6px; margin-bottom: 20px;">
+      <h3>Quiz Results</h3>
+      <p style="font-size: 24px; font-weight: bold; color: #3b82f6; margin: 12px 0;">
+        Score: ${score}% (${correctCount}/${mcqCount} Questions)
+      </p>
+    </div>
+  `;
+  
+  // Show answers and explanations
+  const answersDiv = document.createElement('div');
+  
+  // MCQ Results
+  topic.manual_quiz.mcq_questions?.forEach((q, index) => {
+    const userAnswer = answers[`mcq_${index}`];
+    const isCorrect = userAnswer === q.correct_answer;
+    
+    const qDiv = document.createElement('div');
+    qDiv.style.marginBottom = '20px';
+    qDiv.style.padding = '16px';
+    qDiv.style.border = `1px solid ${isCorrect ? '#10b981' : '#ef4444'}`;
+    qDiv.style.borderRadius = '6px';
+    qDiv.style.background = isCorrect ? '#f0fdf4' : '#fef2f2';
+    
+    qDiv.innerHTML = `
+      <p style="font-weight: 500; margin-bottom: 8px;">${index + 1}. ${q.question}</p>
+      <p style="color: ${isCorrect ? '#10b981' : '#ef4444'}; margin-bottom: 8px;">
+        ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
+      </p>
+      <p style="color: #64748b; font-size: 14px; margin-bottom: 4px;">
+        Your answer: ${q.options[userAnswer] || 'Not answered'}
+      </p>
+      <p style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
+        Correct answer: ${q.options[q.correct_answer]}
+      </p>
+      <p style="color: #1e293b; font-size: 14px; margin: 0;">
+        <strong>Explanation:</strong> ${q.explanation}
+      </p>
+    `;
+    answersDiv.appendChild(qDiv);
+  });
+  
+  resultsDiv.appendChild(answersDiv);
+  
+  // Disable form
+  const form = document.getElementById('manual-quiz-form');
+  if (form) {
+    form.querySelectorAll('input, button').forEach(el => {
+      el.disabled = true;
+    });
+  }
+  
+  // Add "Complete this Topic" button
+  const completeButtonDiv = document.createElement('div');
+  completeButtonDiv.style.marginTop = '30px';
+  completeButtonDiv.style.padding = '20px';
+  completeButtonDiv.style.background = '#f0fdf4';
+  completeButtonDiv.style.border = '2px solid #10b981';
+  completeButtonDiv.style.borderRadius = '8px';
+  completeButtonDiv.style.textAlign = 'center';
+  
+  const completeButton = document.createElement('button');
+  completeButton.className = 'btn btn-primary';
+  completeButton.textContent = '✅ Complete this Topic';
+  completeButton.style.fontSize = '16px';
+  completeButton.style.padding = '12px 32px';
+  completeButton.addEventListener('click', async () => {
+    await completeTopic(score, answers);
+  });
+  
+  completeButtonDiv.innerHTML = `
+    <p style="margin-bottom: 16px; color: #1e293b; font-weight: 500;">Ready to mark this topic as complete?</p>
+  `;
+  completeButtonDiv.appendChild(completeButton);
+  
+  resultsDiv.appendChild(completeButtonDiv);
 }
 
 // Generate content

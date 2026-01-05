@@ -17,7 +17,7 @@ exports.getTopic = async (req, res, next) => {
   try {
     const topic = await Topic.findById(req.params.id)
       .populate('module_id', 'title')
-      .populate('course_id', 'title goal');
+      .populate('course_id', 'title goal course_type');
     
     if (!topic) {
       return res.status(404).json({ error: 'Topic not found' });
@@ -29,7 +29,11 @@ exports.getTopic = async (req, res, next) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.json(topic);
+    // Include course_type in response
+    const topicObj = topic.toObject();
+    topicObj.course_type = course.course_type;
+    
+    res.json(topicObj);
   } catch (error) {
     next(error);
   }
