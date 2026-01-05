@@ -747,6 +747,63 @@ document.getElementById('generate-content-btn').addEventListener('click', async 
   }
 });
 
+// Generate manual topic content
+const generateManualContentBtn = document.getElementById('generate-manual-content-btn');
+if (generateManualContentBtn) {
+  generateManualContentBtn.addEventListener('click', async () => {
+  const btn = document.getElementById('generate-manual-content-btn');
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  const manualContentInput = document.getElementById('manual-content-input');
+  
+  // Get the content from textarea
+  const manualContent = manualContentInput.value.trim();
+  
+  if (!manualContent) {
+    errorDiv.textContent = 'Please paste your content before generating.';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  errorDiv.classList.add('hidden');
+  successDiv.classList.add('hidden');
+  
+  const loading = document.getElementById('loading');
+  const content = document.getElementById('topic-content');
+  
+  loading.style.display = 'block';
+  content.style.display = 'none';
+  
+  try {
+    const result = await api.generateManualTopicContent(topicId, manualContent);
+    topic = result.topic;
+    
+    // Hide the manual content input section
+    document.getElementById('manual-content-section').style.display = 'none';
+    
+    // Show the generated sections
+    renderManualTopicContent();
+    
+    // Show reset button
+    document.getElementById('reset-topic-btn').style.display = 'inline-block';
+    
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    successDiv.textContent = 'Topic content generated successfully!';
+    successDiv.classList.remove('hidden');
+  } catch (error) {
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    errorDiv.textContent = error.message;
+    errorDiv.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Generate Topic Content';
+  }
+  });
+}
+
 // Reset topic content
 document.getElementById('reset-topic-btn').addEventListener('click', async () => {
   // Show confirmation dialog
