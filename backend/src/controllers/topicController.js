@@ -250,3 +250,37 @@ exports.updatePracticalTask = async (req, res, next) => {
   }
 };
 
+exports.resetManualTopicContent = async (req, res, next) => {
+  try {
+    const topic = await Topic.findById(req.params.id)
+      .populate('course_id', 'title goal course_type');
+    
+    if (!topic) {
+      return res.status(404).json({ error: 'Topic not found' });
+    }
+
+    // Verify course ownership
+    const course = await Course.findById(topic.course_id);
+    if (!course || course.created_by.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (course.course_type !== 'manual') {
+      return res.status(400).json({ error: 'This endpoint is only for manual courses' });
+    }
+
+    // Clear generated content but keep manual_content
+    topic.formatted_content = null;
+    topic.explained_content = null;
+    topic.manual_tutorial_exercises = null;
+    topic.manual_quiz = null;
+    topic.status = 'pending'; // Reset status
+    
+    await topic.save();
+
+    res.json({ topic });
+  } catch (error) {
+    next(error);
+  }
+};
+

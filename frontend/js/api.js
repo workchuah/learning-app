@@ -294,6 +294,20 @@ const api = {
     return await response.json();
   },
 
+  resetManualTopicContent: async (topicId) => {
+    const response = await fetch(`${API_BASE_URL}/topics/${topicId}/reset-manual-content`, {
+      method: 'POST',
+      headers: api.getHeaders(),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reset manual topic content');
+    }
+    
+    return await response.json();
+  },
+
   updatePracticalTask: async (topicId, taskIndex, completed) => {
     const response = await fetch(`${API_BASE_URL}/topics/${topicId}/practical-task`, {
       method: 'PATCH',

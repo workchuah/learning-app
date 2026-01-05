@@ -9,6 +9,7 @@ router.use(authenticate);
 router.get('/:id', topicController.getTopic);
 router.post('/:id/generate-content', topicController.generateTopicContent);
 router.post('/:id/generate-manual-content', topicController.generateManualTopicContent);
+router.post('/:id/reset-manual-content', topicController.resetManualTopicContent);
 router.patch('/:id/practical-task', topicController.updatePracticalTask);
 
 module.exports = router;

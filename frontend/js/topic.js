@@ -807,12 +807,19 @@ if (generateManualContentBtn) {
 // Reset topic content
 document.getElementById('reset-topic-btn').addEventListener('click', async () => {
   // Show confirmation dialog
-  const confirmed = confirm(
-    'Are you sure you want to reset this topic?\n\n' +
-    'This will regenerate all content (lecture notes, exercises, tasks, quiz, and audiobook) based on the latest course information.\n\n' +
-    '⚠️ Warning: This will overwrite all existing content and you will lose any unsaved progress or quiz answers.\n\n' +
-    'Click OK to continue or Cancel to abort.'
-  );
+  const isManualCourse = topic && topic.course_type === 'manual';
+  const confirmMessage = isManualCourse
+    ? 'Are you sure you want to reset this topic?\n\n' +
+      'This will clear all generated content (formatted content, explanation, exercises, and quiz).\n\n' +
+      'Your original pasted content will be preserved, and you can regenerate the content again.\n\n' +
+      '⚠️ Warning: This will overwrite all existing generated content and you will lose any unsaved progress or quiz answers.\n\n' +
+      'Click OK to continue or Cancel to abort.'
+    : 'Are you sure you want to reset this topic?\n\n' +
+      'This will regenerate all content (lecture notes, exercises, tasks, quiz, and audiobook) based on the latest course information.\n\n' +
+      '⚠️ Warning: This will overwrite all existing content and you will lose any unsaved progress or quiz answers.\n\n' +
+      'Click OK to continue or Cancel to abort.';
+  
+  const confirmed = confirm(confirmMessage);
   
   if (!confirmed) {
     return;
@@ -826,18 +833,26 @@ document.getElementById('reset-topic-btn').addEventListener('click', async () =>
   
   // Show loading state
   btn.disabled = true;
-  btn.textContent = '🔄 Regenerating...';
+  btn.textContent = '🔄 Resetting...';
   errorDiv.classList.add('hidden');
   successDiv.classList.add('hidden');
   loading.style.display = 'block';
   content.style.display = 'none';
   
   try {
-    // Regenerate topic content
-    const result = await api.generateTopicContent(topicId);
-    topic = result.topic;
+    let result;
     
-    // Clear progress for this topic (since content is regenerated)
+    if (isManualCourse) {
+      // Reset manual topic content (clears generated content, keeps manual_content)
+      result = await api.resetManualTopicContent(topicId);
+      topic = result.topic;
+    } else {
+      // Regenerate AI-generated topic content
+      result = await api.generateTopicContent(topicId);
+      topic = result.topic;
+    }
+    
+    // Clear progress for this topic (since content is reset/regenerated)
     try {
       await api.updateProgress({
         course_id: courseId || topic.course_id,
@@ -856,8 +871,10 @@ document.getElementById('reset-topic-btn').addEventListener('click', async () =>
     progress = null;
     quizSubmitted = false;
     
-    // Reload the page to show new content
-    successDiv.textContent = 'Topic content regenerated successfully! Reloading...';
+    // Reload the page to show updated state
+    successDiv.textContent = isManualCourse 
+      ? 'Topic content reset successfully! Reloading...'
+      : 'Topic content regenerated successfully! Reloading...';
     successDiv.classList.remove('hidden');
     
     setTimeout(() => {
