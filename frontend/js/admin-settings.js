@@ -140,31 +140,44 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     
     // Helper function to add agent if it has a value or provider changed
     const addAgentIfHasValue = (agentName, prefix) => {
-      const apiKeyValue = document.getElementById(`${prefix}-api-key`).value.trim();
-      const providerValue = document.getElementById(`${prefix}-provider`).value;
-      const originalProvider = originalProviders[prefix] || 'openai';
-      const isConfigured = agentConfiguredStatus[prefix] || false;
-      
-      // Include if:
-      // 1. api_key has a value (user is setting/updating it), OR
-      // 2. agent is already configured AND provider changed (update provider only)
-      const providerChanged = providerValue !== originalProvider;
-      
-      if (apiKeyValue) {
-        // User is providing/updating API key
-        apiKeys[agentName] = {
-          provider: providerValue,
-          api_key: apiKeyValue,
-        };
-      } else if (isConfigured && providerChanged) {
-        // Agent is configured, provider changed, but no new API key
-        // Only update provider, keep existing API key
-        apiKeys[agentName] = {
-          provider: providerValue,
-          // Don't include api_key - backend will keep existing value
-        };
+      try {
+        const apiKeyInput = document.getElementById(`${prefix}-api-key`);
+        const providerSelect = document.getElementById(`${prefix}-provider`);
+        
+        // Check if elements exist
+        if (!apiKeyInput || !providerSelect) {
+          console.error(`Elements not found for ${agentName} (prefix: ${prefix})`);
+          return;
+        }
+        
+        const apiKeyValue = apiKeyInput.value.trim();
+        const providerValue = providerSelect.value;
+        const originalProvider = originalProviders[prefix] || 'openai';
+        const isConfigured = agentConfiguredStatus[prefix] || false;
+        
+        // Include if:
+        // 1. api_key has a value (user is setting/updating it), OR
+        // 2. agent is already configured AND provider changed (update provider only)
+        const providerChanged = providerValue !== originalProvider;
+        
+        if (apiKeyValue) {
+          // User is providing/updating API key
+          apiKeys[agentName] = {
+            provider: providerValue,
+            api_key: apiKeyValue,
+          };
+        } else if (isConfigured && providerChanged) {
+          // Agent is configured, provider changed, but no new API key
+          // Only update provider, keep existing API key
+          apiKeys[agentName] = {
+            provider: providerValue,
+            // Don't include api_key - backend will keep existing value
+          };
+        }
+        // If api_key is empty and provider didn't change, don't include (preserve everything)
+      } catch (error) {
+        console.error(`Error processing ${agentName} (prefix: ${prefix}):`, error);
       }
-      // If api_key is empty and provider didn't change, don't include (preserve everything)
     };
     
     // Only add agents that have API key values
@@ -180,10 +193,16 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
     addAgentIfHasValue('manual_tutorial_exercises_agent', 'mte');
     addAgentIfHasValue('manual_mcq_agent', 'mmcq');
     
+    // Debug: Log what we're about to save
+    console.log('API Keys to save:', Object.keys(apiKeys));
+    console.log('API Keys object:', apiKeys);
+    
     // Only send if there are keys to update
     if (Object.keys(apiKeys).length === 0) {
       errorDiv.textContent = 'Please enter at least one API key to save.';
       errorDiv.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Save All API Keys';
       return;
     }
     
@@ -192,7 +211,9 @@ document.getElementById('save-api-keys-btn').addEventListener('click', async () 
       api_keys: apiKeys,
     };
     
-    await api.updateSettings(settings);
+    console.log('Sending settings:', settings);
+    const result = await api.updateSettings(settings);
+    console.log('Settings saved, response:', result);
     successDiv.textContent = `API keys saved successfully! (${Object.keys(apiKeys).length} agent(s) updated)`;
     successDiv.classList.remove('hidden');
     
