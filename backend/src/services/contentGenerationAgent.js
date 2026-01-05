@@ -273,7 +273,7 @@ Instructions:
 - Maintain the original information and meaning
 - Improve readability and structure
 - Use appropriate headings and subheadings
-- Format lists, paragraphs, tables, and key points clearly
+- Format lists, paragraphs, tables(html tables), and key points clearly
 
 Return the formatted content in clean markdown.`;
 
@@ -304,7 +304,7 @@ Format your response in clear, well-structured markdown with:
 - Practical examples
 - Important notes and tips
 - Additional context where helpful
-- Tables should be formatted using markdown tables and should be aligned properly`;
+- Tables should be formatted using proper html tables and should be aligned properly`;
 
   const openaiKey = provider === 'openai' ? apiKey : null;
   const geminiKey = provider === 'gemini' ? apiKey : null;
@@ -312,7 +312,7 @@ Format your response in clear, well-structured markdown with:
 }
 
 async function generateManualTutorialExercises(formattedContent, explainedContent, provider = 'openai', model = null, apiKey = null) {
-  const prompt = `You are an expert educator. Create 10 tutorial exercises with detailed answers based on the following content.
+  const prompt = `You are an expert educator. Create 15 tutorial exercises with detailed answers based on the following content.
 
 Formatted Content:
 ${formattedContent}
