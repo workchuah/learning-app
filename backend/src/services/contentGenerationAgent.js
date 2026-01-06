@@ -297,8 +297,10 @@ Instructions:
 - Add practical examples and use cases
 - Explain why these concepts are important
 - Expand on key points with additional context
+- Provide an example of how to apply the concepts in a practical way
+- Add a summary of the key points at the end
 - Make it beginner-friendly and easy to understand
-- Keep the original structure but add depth
+- Structure of the content can be rearranged in a way that is easy to understand and follow
 
 Format your response in clear, well-structured markdown with:
 - Detailed explanations
