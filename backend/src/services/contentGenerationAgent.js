@@ -305,7 +305,7 @@ Format your response in clear, well-structured markdown with:
 - Practical examples
 - Important notes and tips
 - Additional context where helpful
-- Tables should be formatted using markdown tables and should be aligned properly`;
+- If there's a table, format it into a points format`;
 
   const openaiKey = provider === 'openai' ? apiKey : null;
   const geminiKey = provider === 'gemini' ? apiKey : null;
