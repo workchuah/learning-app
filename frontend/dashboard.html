@@ -3,19 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cyber Daily 295 Planner</title>
+  <title>Cybersecurity Roadmap - Chuah Learning</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <div id="root"></div>
+<body class="cyber-body">
+  <header class="header cyber-header">
+    <div class="header-left">
+      <a href="dashboard.html" class="logo cyber-logo">🛡 Cybersecurity Roadmap</a>
+    </div>
+    <div class="header-right">
+      <a href="admin-settings.html" class="header-nav-link">⚙️ Settings</a>
+      <button class="btn btn-secondary" id="logout-btn">Logout</button>
+    </div>
+  </header>
 
-  <!-- React + ReactDOM via CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel compiler for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Cyber Daily 295 App (JSX), compiled by Babel in browser) -->
-  <script type="text/babel" data-presets="env,react" src="../../../Cybersecurity/cyber-daily-295.jsx"></script>
+  <main class="cyber-main">
+    <div id="roadmap-app" class="roadmap-app">
+      <!-- Roadmap UI will be rendered here by JS -->
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cyber-roadmap-data.js"></script>
+  <script src="js/dashboard.js"></script>
 </body>
 </html>
 
