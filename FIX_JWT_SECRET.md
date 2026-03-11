@@ -54,6 +54,8 @@ If you want to get started quickly, use this secret:
 
 ```
 chuah-learning-app-jwt-secret-2024-super-secure-random-key-abcdefghijklmnopqrstuvwxyz1234567890
+
+20900135cce98ee8f0ad50889d6bde703751d424cb8e406f83e9a13153d93f2d
 ```
 
 **Important:** For production, use a truly random secret generated with Option A or B above.

@@ -82,6 +82,15 @@ body {
   color: #1e293b;
 }
 
+/* Topic meta (day / phase) */
+.topic-meta {
+  margin-top: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
 /* Forms */
 .form-group {
   margin-bottom: 20px;

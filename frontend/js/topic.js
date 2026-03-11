@@ -52,6 +52,19 @@ async function loadTopic() {
     
     document.getElementById('topic-title').textContent = topic.title;
     
+    // Optional Cyber-Daily style meta: Day + Phase
+    const metaEl = document.getElementById('topic-meta');
+    const dayLabel = typeof topic.day_number === 'number' ? `Day ${topic.day_number}` : '';
+    const phaseLabel = topic.phase ? topic.phase : '';
+    const metaParts = [dayLabel, phaseLabel].filter(Boolean);
+    if (metaParts.length > 0) {
+      metaEl.textContent = metaParts.join(' · ');
+      metaEl.classList.remove('hidden');
+    } else {
+      metaEl.classList.add('hidden');
+      metaEl.textContent = '';
+    }
+    
     const isManualCourse = topic.course_type === 'manual';
     
     // Show reset button if topic content exists
