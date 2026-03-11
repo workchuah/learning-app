@@ -3,90 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Chuah Learning App</title>
+  <title>Cyber Daily 295 Planner</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="header">
-    <div class="header-left">
-      <a href="dashboard.html" class="logo">📚 Chuah Learning</a>
-    </div>
-    <div class="header-right">
-      <a href="admin-settings.html" class="header-nav-link">⚙️ Settings</a>
-      <button class="btn btn-secondary" id="logout-btn">Logout</button>
-    </div>
-  </header>
+  <div id="root"></div>
 
-  <main class="container" style="max-width: 1200px; padding: 40px 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-      <h1>My Courses</h1>
-      <button class="btn btn-primary" id="create-course-btn">+ Create New Course</button>
-    </div>
-
-    <div id="error-message" class="alert alert-error hidden"></div>
-    <div id="success-message" class="alert alert-success hidden"></div>
-
-    <div id="courses-container" class="courses-grid">
-      <!-- Courses will be loaded here -->
-    </div>
-
-    <div id="loading" class="text-center" style="display: none; padding: 40px;">
-      <div class="spinner"></div>
-      <p style="margin-top: 16px; color: #64748b;">Loading courses...</p>
-    </div>
-  </main>
-
-  <!-- Create Course Modal -->
-  <div id="create-course-modal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Create New Course</h2>
-        <button class="modal-close" id="close-modal">&times;</button>
-      </div>
-      <form id="create-course-form">
-        <div class="form-group">
-          <label class="form-label" for="course-type">Course Type *</label>
-          <select id="course-type" class="form-input" required>
-            <option value="ai_generated">AI Generated Course</option>
-            <option value="manual">Manual Course</option>
-          </select>
-          <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">
-            AI Generated: AI creates modules and topics. Manual: You create your own modules and topics.
-          </small>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label" for="course-title">Course Title *</label>
-          <input type="text" id="course-title" class="form-input" required>
-        </div>
-        
-        <div class="form-group" id="course-goal-group">
-          <label class="form-label" for="course-goal">Course Goal *</label>
-          <textarea id="course-goal" class="form-input" rows="3" required></textarea>
-          <small style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;" id="course-goal-help">
-            Describe what students will learn from this course.
-          </small>
-        </div>
-        
-        <div class="form-group" id="course-outline-group" style="display: none;">
-          <label class="form-label" for="course-outline">Course Outline (Optional)</label>
-          <input type="file" id="course-outline" class="form-input" accept=".pdf,.txt,.md">
-          <small style="color: #64748b; font-size: 12px;">Upload PDF, TXT, or MD file. If not provided, AI will design the course structure.</small>
-        </div>
-        
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cancel-course-btn">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Course</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script src="js/config.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/dashboard.js"></script>
+  <!-- React + ReactDOM via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel compiler for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Cyber Daily 295 App (JSX), compiled by Babel in browser) -->
+  <script type="text/babel" data-presets="env,react" src="../../../Cybersecurity/cyber-daily-295.jsx"></script>
 </body>
 </html>
 
